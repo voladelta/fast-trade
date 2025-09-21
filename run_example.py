@@ -40,7 +40,7 @@ if __name__ == "__main__":
     # get the dataframe
     # print(res)
     df = get_kline(
-        "BTCUSDT", "binance", start_date="2025-01-01", end_date="2025-01-31"
+        "BTCUSDT", "binance", start_date="2024-10-01", end_date="2025-02-26"
     )
     prepped = prepare_df(df, strategy)
     # res = validate_backtest(strategy)

@@ -307,7 +307,9 @@ def build_summary(df, performance_start_time):
     equity_peak = round(df["account_value"].max(), 3)
     equity_final = round(df.iloc[-1]["adj_account_value"], 3)
 
-    max_drawdown = round(df["adj_account_value"].min(), 3)
+    initial_value = df.iloc[0]["adj_account_value"]
+    min_value = df["adj_account_value"].min()
+    max_drawdown = round(((min_value - initial_value) / initial_value) * 100, 3) if initial_value > 0 else 0.0
 
     performance_stop_time = datetime.datetime.utcnow()
     start_date = df.index[0]
