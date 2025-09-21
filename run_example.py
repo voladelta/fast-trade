@@ -1,7 +1,6 @@
-# flake8: noqa
-from fast_trade import run_backtest, prepare_df
-from fast_trade.validate_backtest import validate_backtest
-from fast_trade.archive.db_helpers import get_kline
+from fast_trade import run_backtest
+from fast_trade.utils import parse_logic_expr
+import pprint
 import datetime
 
 strategy = {
@@ -9,12 +8,12 @@ strategy = {
     "any_enter": [],
     "any_exit": [],
     "enter": [
-        ["rsi", "<", 30],
-        ["bbands_bbands_bb_lower", ">", "close"],
+        parse_logic_expr("rsi < 30"),
+        parse_logic_expr("bbands_bbands_bb_lower > close"),
     ],
     "exit": [
-        ["rsi", ">", 70],
-        ["bbands_bbands_bb_upper", "<", "close"],
+        parse_logic_expr("rsi > 70"),
+        parse_logic_expr("bbands_bbands_bb_upper < close"),
     ],
     "datapoints": [
         {"name": "ema", "transformer": "ema", "args": [5]},
@@ -37,17 +36,5 @@ strategy = {
 }
 
 if __name__ == "__main__":
-    # get the dataframe
-    # print(res)
-    df = get_kline(
-        "BTCUSDT", "binance", start_date="2024-10-01", end_date="2025-02-26"
-    )
-    prepped = prepare_df(df, strategy)
-    # res = validate_backtest(strategy)
-    # print(res)
-    # print("errors: ", res)
-    # print(res.get("df").columns)
     res = run_backtest(strategy)
-    import pprint
-
     pprint.pprint(res.get("summary"))

@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 
 
 def to_dataframe(ticks: list) -> pd.DataFrame:
@@ -96,3 +97,62 @@ def infer_frequency(df: pd.DataFrame) -> str:
     else:
         days = int(seconds / 86400)
         return f"{days}D"
+
+
+def parse_logic_expr(expression: str) -> list:
+    """Parse a logic expression string into array format used by the backtest system.
+
+    Converts expressions like "rsi < 30" into ["rsi", "<", 30] and
+    "bbands_bbands_bb_lower > close" into ["bbands_bbands_bb_lower", ">", "close"]
+
+    Parameters
+    ----------
+    expression : str
+        The logic expression to parse (e.g., "rsi < 30", "bbands_bbands_bb_lower > close")
+
+    Returns
+    -------
+    list
+        Array format: [field_name, operator, value] where value can be a number or field name
+
+    Examples
+    --------
+    >>> parse_logic_expr("rsi < 30")
+    ["rsi", "<", 30]
+    >>> parse_logic_expr("bbands_bbands_bb_lower > close")
+    ["bbands_bbands_bb_lower", ">", "close"]
+    """
+    # Pattern to match: field_name operator value
+    # Where operator is one of: <, >, =, <=, >=, !=
+    # And value can be a number (including negative) or another field name
+    pattern = r'^([a-zA-Z_][a-zA-Z0-9_.]*)\s*([<>=!]+)\s*(-?[a-zA-Z0-9_.]+(?:\.[a-zA-Z0-9_.]+)*)$'
+    match = re.match(pattern, expression.strip())
+
+    if not match:
+        raise ValueError(f"Invalid logic expression format: '{expression}'. Expected format: 'field operator value'")
+
+    field_name = match.group(1)
+    operator = match.group(2)
+    value_str = match.group(3)
+
+    # Validate operator
+    valid_operators = ['<', '>', '=', '<=', '>=', '!=']
+    if operator not in valid_operators:
+        raise ValueError(f"Invalid operator '{operator}'. Valid operators are: {valid_operators}")
+
+    # Try to convert value to number if it's numeric, otherwise treat as field name
+    value = value_str
+    # Check if it's a numeric value (including negative numbers)
+    numeric_part = value_str.replace('.', '')
+    if numeric_part.replace('-', '').isdigit() and numeric_part.count('-') <= 1 and (numeric_part.count('-') == 0 or numeric_part.startswith('-')):
+        # It's a number, convert to int or float
+        try:
+            if '.' in value_str:
+                value = float(value_str)
+            else:
+                value = int(value_str)
+        except ValueError:
+            # If conversion fails, treat as string (field name)
+            pass
+
+    return [field_name, operator, value]
