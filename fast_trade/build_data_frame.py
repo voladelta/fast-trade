@@ -5,6 +5,8 @@ from typing import Union
 
 import pandas as pd
 
+from fast_trade.utils import infer_frequency
+
 from .transformers_map import transformers_map
 
 # OHLC aggregation dictionary for proper resampling
@@ -321,56 +323,3 @@ def standardize_df(df: pd.DataFrame):
     new_df.volume = pd.to_numeric(new_df.volume)
 
     return new_df
-
-
-def infer_frequency(df: pd.DataFrame) -> str:
-    """Infers the frequency of a DataFrame by analyzing time differences between consecutive index values.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with a datetime index
-
-    Returns
-    -------
-    str
-        The inferred frequency as a string (e.g., '1Min', '5Min', '1H', '1D', etc.)
-        Returns None if frequency cannot be determined
-    """
-    if not isinstance(df.index, pd.DatetimeIndex):
-        raise ValueError("DataFrame index must be a DatetimeIndex")
-
-    if df.index.freq is not None:
-        return df.index.freqstr
-
-    # Calculate time differences between consecutive index values
-    time_diffs = df.index.to_series().diff()
-
-    # Get the most common time difference
-    if len(time_diffs.dropna()) == 0:
-        # No valid time differences, return a default frequency
-        return "1Min"
-
-    mode_result = time_diffs.mode()
-    if len(mode_result) == 0:
-        # Mode is empty, return a default frequency
-        return "1Min"
-
-    most_common_diff = mode_result[0]
-    if pd.isna(most_common_diff):
-        # Mode contains NaN, return a default frequency
-        return "1Min"
-    seconds = most_common_diff.total_seconds()
-
-    # Convert seconds to appropriate frequency string
-    if seconds < 60:
-        return f"{int(seconds)}S"
-    elif seconds < 3600:
-        minutes = int(seconds / 60)
-        return f"{minutes}Min"
-    elif seconds < 86400:
-        hours = int(seconds / 3600)
-        return f"{hours}H"
-    else:
-        days = int(seconds / 86400)
-        return f"{days}D"
