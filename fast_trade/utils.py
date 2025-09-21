@@ -125,7 +125,7 @@ def parse_logic_expr(expression: str) -> list:
     # Pattern to match: field_name operator value
     # Where operator is one of: <, >, =, <=, >=, !=
     # And value can be a number (including negative) or another field name
-    pattern = r'^([a-zA-Z_][a-zA-Z0-9_.]*)\s*([<>=!]+)\s*(-?[a-zA-Z0-9_.]+(?:\.[a-zA-Z0-9_.]+)*)$'
+    pattern = r'^([a-zA-Z_][a-zA-Z0-9_.]*)\s*([<>=]+)\s*(-?[a-zA-Z0-9_.]+(?:\.[a-zA-Z0-9_.]+)*)$'
     match = re.match(pattern, expression.strip())
 
     if not match:
@@ -136,7 +136,7 @@ def parse_logic_expr(expression: str) -> list:
     value_str = match.group(3)
 
     # Validate operator
-    valid_operators = ['<', '>', '=', '<=', '>=', '!=']
+    valid_operators = [">", "=", "<", ">=", "<="]
     if operator not in valid_operators:
         raise ValueError(f"Invalid operator '{operator}'. Valid operators are: {valid_operators}")
 
