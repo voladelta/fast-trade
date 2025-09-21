@@ -64,8 +64,8 @@ def infer_frequency(df: pd.DataFrame) -> str:
     Returns
     -------
     str
-        The inferred frequency as a string (e.g., '1Min', '5Min', '1H', '1D', etc.)
-        Returns None if frequency cannot be determined
+        The inferred frequency as a string (e.g., '1Min', '5Min', '1H', '1D', etc.).
+        Falls back to ``"1Min"`` if the frequency cannot be determined.
     """
     if not isinstance(df.index, pd.DatetimeIndex):
         raise ValueError("DataFrame index must be a DatetimeIndex")
@@ -73,17 +73,27 @@ def infer_frequency(df: pd.DataFrame) -> str:
     if df.index.freq is not None:
         return df.index.freqstr
 
+    default_frequency = "1Min"
+
     # Calculate time differences between consecutive index values
     time_diffs = df.index.to_series().diff()
+
+    if len(time_diffs.dropna()) == 0:
+        return default_frequency
 
     # Get the most common time difference
     mode_result = time_diffs.mode()
     if len(mode_result) == 0:
-        return None
+        return default_frequency
+
     most_common_diff = mode_result[0]
     if pd.isna(most_common_diff):
-        return None
+        return default_frequency
+
     seconds = most_common_diff.total_seconds()
+
+    if seconds <= 0:
+        return default_frequency
 
     # Convert seconds to appropriate frequency string
     if seconds < 60:
