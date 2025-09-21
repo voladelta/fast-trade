@@ -102,12 +102,12 @@ def run_backtest(backtest: dict, df: pd.DataFrame = pd.DataFrame(), summary=True
             return max(periods)
 
         args = [get_max_periods(dp) for dp in new_backtest.get("datapoints", [])]
-        max_periods = max(args)
+        max_periods = max(args) if args else 0
         # print(max_periods)
         # get the frequency of the backtest
-        freq = new_backtest.get("freq")
-        if not freq and new_backtest.get("chart_period"):
-            freq = new_backtest.get("chart_period")
+        freq = new_backtest.get("freq") or new_backtest.get("chart_period")
+        if not freq:
+            freq = "1Min"  # Default frequency if none specified
         # convert the frequency to a timedelta
         td_freq = pd.Timedelta(freq)
 
@@ -122,7 +122,7 @@ def run_backtest(backtest: dict, df: pd.DataFrame = pd.DataFrame(), summary=True
             backtest.get("exchange"),
             start_date,
             backtest.get("end_date"),
-            freq=backtest.get("freq") or backtest.get("chart_period"),
+            freq=freq,
         )
 
     if df.empty:
@@ -274,7 +274,7 @@ def process_logic_and_generate_actions(df: pd.DataFrame, backtest: object):
     return df
 
 
-def determine_action(frame: pd.DataFrame, backtest: dict, last_frames=[]):
+def determine_action(frame: pd.DataFrame, backtest: dict, last_frames=None):
     """processes the actions with the applied logic
     Parameters
     ----------
@@ -286,6 +286,9 @@ def determine_action(frame: pd.DataFrame, backtest: dict, last_frames=[]):
         string, "e" (enter), "x" (exit), "h" (hold) of what
         the backtest would do
     """
+
+    if last_frames is None:
+        last_frames = []
 
     trailing_stop_loss = backtest.get("trailing_stop_loss")
 
@@ -308,7 +311,7 @@ def determine_action(frame: pd.DataFrame, backtest: dict, last_frames=[]):
     return "h"
 
 
-def take_action(current_frame, logics, last_frames=[], require_any=False):
+def take_action(current_frame, logics, last_frames=None, require_any=False):
     """determines whether to take action based on the logic in the backtest
     Parameters
     ----------
@@ -320,6 +323,9 @@ def take_action(current_frame, logics, last_frames=[], require_any=False):
         boolean, True if row meets the criteria of given backtest,
         False if otherwise
     """
+
+    if last_frames is None:
+        last_frames = []
 
     results = []
 
@@ -374,21 +380,26 @@ def process_single_frame(logics, row, require_any):
 
 
 def process_single_logic(logic, row):
+    return_value = False
+
     val0 = clean_field_type(logic[0], row=row)
     val1 = clean_field_type(logic[2], row=row)
 
-    if logic[1] == ">":
+    operator = logic[1]
+    if operator == ">":
         return_value = bool(val0 > val1)
-    if logic[1] == "<":
+    elif operator == "<":
         return_value = bool(val0 < val1)
-    if logic[1] == "=":
+    elif operator == "=":
         return_value = bool(val0 == val1)
-    if logic[1] == "!=":
+    elif operator == "!=":
         return_value = bool(val0 != val1)
-    if logic[1] == ">=":
+    elif operator == ">=":
         return_value = bool(val0 >= val1)
-    if logic[1] == "<=":
+    elif operator == "<=":
         return_value = bool(val0 <= val1)
+    else:
+        raise ValueError(f"Unsupported operator: {operator}")
 
     return return_value
 
@@ -422,7 +433,6 @@ def clean_field_type(field, row=None):
         return field
 
     if isinstance(field, int) or isinstance(field, float):
-
         return field
 
     if row:

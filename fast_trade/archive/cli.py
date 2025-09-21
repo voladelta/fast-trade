@@ -11,10 +11,8 @@ from .update_kline import update_kline
 def get_assets(exchange: str = "local") -> typing.List[str]:
     assets = []
     try:
-        if exchange == "binanceus":
+        if exchange == "binance":
             assets.extend(binance_api.get_available_symbols())
-        elif exchange == "binancecom":
-            assets.extend(binance_api.get_available_symbols(tld="com"))
         elif exchange == "coinbase":
             assets.extend(coinbase_api.get_asset_ids())
         elif exchange == "local":
@@ -34,9 +32,8 @@ def get_assets(exchange: str = "local") -> typing.List[str]:
 def download_asset(
     symbol: str,
     exchange: str,
-    start: typing.Union[str, datetime.datetime] = datetime.datetime.now()
-    - datetime.timedelta(days=30),
-    end: typing.Union[str, datetime.datetime] = datetime.datetime.now(),
+    start: typing.Union[str, datetime.datetime] = None,
+    end: typing.Union[str, datetime.datetime] = None,
 ):
     """
     Download a single asset from the given exchange
@@ -49,7 +46,13 @@ def download_asset(
         end (str | datetime.datetime): The end date to download to. Defaults to now. Must be in UTC timezone
         and isoformat.
     """
-    # default to 30 days ago
+    # Set runtime defaults
+    if start is None:
+        start = datetime.datetime.now() - datetime.timedelta(days=30)
+    if end is None:
+        end = datetime.datetime.now()
+
+    # Parse string dates if needed
     if not isinstance(start, datetime.datetime):
         start = datetime.datetime.fromisoformat(start)
     if not isinstance(end, datetime.datetime):
@@ -60,13 +63,8 @@ def download_asset(
     end = end.replace(tzinfo=datetime.timezone.utc)
     # make sure the symbol exists
 
-    if exchange == "binanceus":
-        # make sure the symbol exists
+    if exchange == "binance":
         if symbol not in binance_api.get_available_symbols():
-            raise ValueError(f"Symbol {symbol} not found on Binance US")
-        db_path = update_kline(symbol, exchange, start, end)
-    elif exchange == "binancecom":
-        if symbol not in binance_api.get_available_symbols(tld="com"):
             raise ValueError(f"Symbol {symbol} not found on Binance COM")
         db_path = update_kline(symbol, exchange, start, end)
     elif exchange == "coinbase":

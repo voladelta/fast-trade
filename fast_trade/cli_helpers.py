@@ -41,7 +41,7 @@ def open_strat_file(fp):
         raise MissingStrategyFile("Could not open strategy file at path: {}".format(fp))
 
 
-def create_plot(df, trade_df):
+def create_plot(df, trade_df, show_plot=True):
     # Filter for numeric columns only
     numeric_df = df.select_dtypes(include=["number"])
 
@@ -56,14 +56,22 @@ def create_plot(df, trade_df):
             "fee",
             "adj_account_value_change_perc",
             "adj_account_value_change",
-        ]
+        ],
+        errors="ignore",
     )
 
     # Calculate the range of each column
     ranges = numeric_df.max() - numeric_df.min()
 
     # Define a threshold for grouping columns with similar ranges
-    close_range = ranges["close"]
+    # Use the first available column if "close" doesn't exist
+    if "close" in ranges:
+        close_range = ranges["close"]
+    elif len(ranges) > 0:
+        close_range = ranges.iloc[0]  # Use first available column's range
+    else:
+        close_range = 1.0  # Default fallback
+
     threshold = close_range * 0.1  # Adjust this factor as needed
 
     # Group columns based on their range
@@ -90,7 +98,9 @@ def create_plot(df, trade_df):
     for index, row in trade_df.iterrows():
         color = "green" if row["in_trade"] else "red"
         for column in close_group:
-            axs[0].scatter(index, row[column], color=color, s=10, alpha=0.7)
+            # Check if column exists in trade_df and has the value
+            if column in row and pd.notna(row[column]):
+                axs[0].scatter(index, row[column], color=color, s=10, alpha=0.7)
 
     axs[0].set_title("Close Group Over Time")
     axs[0].set_ylabel("Value")
@@ -102,7 +112,9 @@ def create_plot(df, trade_df):
 
         for index, row in trade_df.iterrows():
             color = "green" if row["in_trade"] else "red"
-            ax.scatter(index, row[column], color=color, s=10, alpha=0.7)
+            # Check if column exists in trade_df and has the value
+            if column in row and pd.notna(row[column]):
+                ax.scatter(index, row[column], color=color, s=10, alpha=0.7)
 
         ax.set_title(f"{column} Over Time")
         ax.set_ylabel(column)
@@ -113,7 +125,10 @@ def create_plot(df, trade_df):
 
     # Adjust layout
     plt.tight_layout()
-    plt.show()
+
+    if show_plot:
+        plt.show()
+
     return fig
 
 
@@ -144,16 +159,23 @@ def save(result):
     # dataframe
     # result["df"].to_csv(f"{new_save_dir}/dataframe.csv")
     # result["trade_df"].to_csv(f"{new_save_dir}/trade_dataframe.csv")
-    df_con = connect_to_db(f"{new_save_dir}/dataframe.db", create=True)
-    result["df"].to_sql(
-        "dataframe", con=df_con, if_exists="replace", index=True, index_label="date"
-    )
-    trade_con = connect_to_db(f"{new_save_dir}/trade_log.db", create=True)
-    result["trade_df"].to_sql(
-        "trade_log", con=trade_con, if_exists="replace", index=True, index_label="date"
-    )
+
+    # Use context managers to ensure connections are always closed
+    with connect_to_db(f"{new_save_dir}/dataframe.db", create=True) as df_con:
+        result["df"].to_sql(
+            "dataframe", con=df_con, if_exists="replace", index=True, index_label="date"
+        )
+
+    with connect_to_db(f"{new_save_dir}/trade_log.db", create=True) as trade_con:
+        result["trade_df"].to_sql(
+            "trade_log",
+            con=trade_con,
+            if_exists="replace",
+            index=True,
+            index_label="date",
+        )
 
     # plot
-    create_plot(result["df"], result["trade_df"])
+    fig = create_plot(result["df"], result["trade_df"], show_plot=False)
 
     plt.savefig(f"{new_save_dir}/plot.png")

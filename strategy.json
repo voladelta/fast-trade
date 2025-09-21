@@ -4,7 +4,7 @@
         "freq": "5Min",
         "comission": 0.01,
         "symbol": "BTCUSDT",
-        "exchange": "binanceus",
+        "exchange": "binance",
         "datapoints": [
           {
             "args": [

@@ -207,3 +207,36 @@ def test_validate_any_exit_logic_invalid_1():
     print(backtest_mirror)
 
     assert backtest_mirror["any_exit"].get("error") is True
+
+
+def test_validate_logic_too_short():
+    """Test that logic lists with fewer than 3 elements are rejected"""
+    mock_datapoints = [
+        {"args": [30], "transformer": "sma", "name": "sma_short"},
+    ]
+
+    # Test with empty logic list
+    mock_backtest = {"datapoints": mock_datapoints, "enter": [[]]}
+    backtest_mirror = validate_backtest(mock_backtest)
+    assert backtest_mirror["enter"].get("error") is True
+    assert "must have at least 3 elements" in str(backtest_mirror["enter"]["msgs"])
+
+    # Test with 1 element
+    mock_backtest = {"datapoints": mock_datapoints, "enter": [["close"]]}
+    backtest_mirror = validate_backtest(mock_backtest)
+    assert backtest_mirror["enter"].get("error") is True
+    assert "must have at least 3 elements" in str(backtest_mirror["enter"]["msgs"])
+
+    # Test with 2 elements
+    mock_backtest = {"datapoints": mock_datapoints, "enter": [["close", ">"]]}
+    backtest_mirror = validate_backtest(mock_backtest)
+    assert backtest_mirror["enter"].get("error") is True
+    assert "must have at least 3 elements" in str(backtest_mirror["enter"]["msgs"])
+
+    # Test that valid 3-element logic still works
+    mock_backtest = {
+        "datapoints": mock_datapoints,
+        "enter": [["close", ">", "sma_short"]],
+    }
+    backtest_mirror = validate_backtest(mock_backtest)
+    assert backtest_mirror["enter"] is None  # No error for valid logic

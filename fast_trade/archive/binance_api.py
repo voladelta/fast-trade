@@ -3,11 +3,17 @@ import math
 import os
 import random
 import time
+from typing import List, Optional
 
 import pandas as pd
 import requests
 
 API_DELAY = float(os.getenv("API_DELAY", 0.3))
+
+# Cache for available symbols with timestamp
+_available_symbols_cache: Optional[List[str]] = None
+_cache_timestamp: Optional[datetime.datetime] = None
+CACHE_DURATION = datetime.timedelta(hours=1)  # Cache for 1 hour
 
 BINANCE_KLINE_REST_HEADER_MATCH = [
     "date",  # Open time
@@ -25,8 +31,8 @@ BINANCE_KLINE_REST_HEADER_MATCH = [
 ]
 
 
-def get_exchange_info(tld="us"):
-    url = f"https://api.binance.{tld}/api/v3"
+def get_exchange_info():
+    url = "https://api.binance.com/api/v3"
     req = requests.get(f"{url}/exchangeInfo")
     # attempt to sort any keys that are lists
     data = req.json()
@@ -55,8 +61,21 @@ def get_exchange_info(tld="us"):
     return data
 
 
-def get_available_symbols(tld="us"):
-    exchange_info = get_exchange_info(tld)
+def get_available_symbols() -> List[str]:
+    global _available_symbols_cache, _cache_timestamp
+
+    now = datetime.datetime.now()
+
+    # Check if cache is valid
+    if (
+        _available_symbols_cache is not None
+        and _cache_timestamp is not None
+        and now - _cache_timestamp < CACHE_DURATION
+    ):
+        return _available_symbols_cache
+
+    # Cache miss or expired, fetch from API
+    exchange_info = get_exchange_info()
     symbols = []
 
     for symbol in exchange_info.get("symbols", []):
@@ -64,13 +83,17 @@ def get_available_symbols(tld="us"):
             symbols.append(symbol["symbol"])
 
     symbols.sort()
+
+    # Update cache
+    _available_symbols_cache = symbols
+    _cache_timestamp = now
+
     return symbols
 
 
-def get_oldest_date_available(symbol, tld="us"):
+def get_oldest_date_available(symbol):
     endTime = int(datetime.datetime.utcnow().timestamp() * 1000)
-    # TODO: make this accept a tld
-    url = f"https://api.binance.{tld}/api/v3/klines?symbol={symbol}&interval=1m&startTime=0&endTime={endTime}&limit=1"
+    url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&startTime=0&endTime={endTime}&limit=1"
 
     data = requests.get(url).json()
     try:
@@ -85,7 +108,6 @@ def get_binance_klines(
     symbol,
     start_date: datetime.datetime,
     end_date: datetime.datetime,
-    tld="us",
     status_update=lambda x: None,
     store_func=lambda x, y: None,
 ):
@@ -107,6 +129,7 @@ def get_binance_klines(
     total_api_calls = 0
     klines = []
     start_time = time.time()
+    error_count = 0
     while curr_date < end_date:
         next_end_date = curr_date + datetime.timedelta(hours=HOURS_TO_INCREMENT)
         startTime = int(curr_date.timestamp()) * 1000
@@ -115,17 +138,17 @@ def get_binance_klines(
         print(f"Getting {symbol} from {curr_date} to {next_end_date}")
 
         url = (
-            f"https://api.binance.{tld}/api/v3/klines"
+            "https://api.binance.com/api/v3/klines"
             f"?symbol={symbol}&interval=1m"
             f"&startTime={startTime}&endTime={endTime}&limit=1000"
         )
 
         req = requests.get(url)
         total_api_calls += 1
-        error_count = 0
         if req.status_code == 200:
             curr_date = next_end_date
             klines.extend(req.json())
+            error_count = 0  # Reset error count on successful request
         else:
             # print(req)
             # raise Exception(f"Error with {symbol}")
@@ -146,7 +169,7 @@ def get_binance_klines(
         if total_api_calls % 30 == 0:
             sleeper += random.randint(1, 3)
             kline_df = binance_kline_to_df(klines)
-            store_func(kline_df, symbol, "binanceus")
+            store_func(kline_df, symbol, "binance")
 
         status_obj = {
             "symbol": symbol,
@@ -164,7 +187,6 @@ def get_binance_klines(
         }
         status_update(status_obj)
         time.sleep(sleeper)
-        curr_date = next_end_date
 
     status_obj = {
         "symbol": symbol,

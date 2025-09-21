@@ -5,12 +5,18 @@ import random
 import time
 import typing
 from pprint import pprint
+from typing import List, Optional
 
 import pandas as pd
 import requests
 
 API_DELAY = os.getenv("API_DELAY", 0.3)
 BASE_URL = "https://api.exchange.coinbase.com"
+
+# Cache for asset IDs with timestamp
+_asset_ids_cache: Optional[List[str]] = None
+_asset_cache_timestamp: Optional[datetime.datetime] = None
+CACHE_DURATION = datetime.timedelta(hours=1)  # Cache for 1 hour
 CB_REST_HEADER_MATCH = [
     "date",
     "low",
@@ -35,10 +41,28 @@ def get_products() -> typing.List[dict]:
         return []
 
 
-def get_asset_ids() -> typing.List[str]:
+def get_asset_ids() -> List[str]:
     """Returns a list of all tradable assets on Coinbase Pro"""
+    global _asset_ids_cache, _asset_cache_timestamp
+
+    now = datetime.datetime.now()
+
+    # Check if cache is valid
+    if (
+        _asset_ids_cache is not None
+        and _asset_cache_timestamp is not None
+        and now - _asset_cache_timestamp < CACHE_DURATION
+    ):
+        return _asset_ids_cache
+
+    # Cache miss or expired, fetch from API
     ids = [asset["id"] for asset in get_products()]
     ids.sort()
+
+    # Update cache
+    _asset_ids_cache = ids
+    _asset_cache_timestamp = now
+
     return ids
 
 
@@ -107,7 +131,6 @@ def get_product_candles(
             continue
         call_count += 1
         if call_count % 10 == 0:
-
             store_func(df, product_id, "coinbase")
 
         status_obj = {

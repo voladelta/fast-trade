@@ -24,7 +24,17 @@ def handle_rule(result: dict, rule: list) -> bool:
 
     # Handle the comparison value
     if isinstance(value_or_column_name, str):
-        value = float(get_nested_value(result, value_or_column_name))
+        # Check if it's a dotted path (contains dots)
+        if "." in value_or_column_name:
+            # Treat as nested dictionary access
+            value = float(get_nested_value(result, value_or_column_name))
+        else:
+            # Try to access as direct key lookup from result, fallback to numeric literal
+            try:
+                value = float(result[value_or_column_name])
+            except KeyError:
+                # Treat as numeric literal
+                value = float(value_or_column_name)
     else:
         value = float(value_or_column_name)
 

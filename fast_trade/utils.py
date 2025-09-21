@@ -70,13 +70,18 @@ def infer_frequency(df: pd.DataFrame) -> str:
         raise ValueError("DataFrame index must be a DatetimeIndex")
 
     if df.index.freq is not None:
-        return df.index.freq
+        return df.index.freqstr
 
     # Calculate time differences between consecutive index values
     time_diffs = df.index.to_series().diff()
 
     # Get the most common time difference
-    most_common_diff = time_diffs.mode()[0]
+    mode_result = time_diffs.mode()
+    if len(mode_result) == 0:
+        return None
+    most_common_diff = mode_result[0]
+    if pd.isna(most_common_diff):
+        return None
     seconds = most_common_diff.total_seconds()
 
     # Convert seconds to appropriate frequency string

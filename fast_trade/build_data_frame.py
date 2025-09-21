@@ -1,10 +1,20 @@
 import os
 import re
 from datetime import datetime
+from typing import Union
 
 import pandas as pd
 
 from .transformers_map import transformers_map
+
+# OHLC aggregation dictionary for proper resampling
+OHLC_AGGREGATION = {
+    "open": "first",
+    "high": "max",
+    "low": "min",
+    "close": "last",
+    "volume": "sum",
+}
 
 
 class TransformerError(Exception):
@@ -75,7 +85,7 @@ def prepare_df(df: pd.DataFrame, backtest: dict):
 
     if backtest.get("chart_period"):
         # raise a warning if chart_period is not a valid frequency
-        if not infer_frequency(df, backtest.get("chart_period")):
+        if not infer_frequency(df):
             raise ValueError(f"Invalid chart period: {backtest.get('chart_period')}")
         freq = backtest.get("chart_period")
     else:
@@ -114,22 +124,46 @@ def apply_charting_to_df(df: pd.DataFrame, freq: str, start_time: str, stop_time
                 "Data does not have a date column. Headers must include date, open, high, low, close, volume."
             )
 
-        time_unit = detect_time_unit(df.date[1])
-        df.date = pd.to_datetime(df.date, unit=time_unit)
+        # Get a sample date value for time unit detection
+        sample_date = None
+        if "date" in df.columns:
+            if len(df) > 1:
+                # Try to get the second row to avoid potential issues with the first row
+                sample_date = (
+                    df.date.iloc[1] if hasattr(df.date, "iloc") else df.date[1]
+                )
+            elif len(df) == 1:
+                # Fallback to first row if only one row
+                sample_date = (
+                    df.date.iloc[0] if hasattr(df.date, "iloc") else df.date[0]
+                )
+
+        time_unit = detect_time_unit(sample_date) if sample_date is not None else None
+        df.date = pd.to_datetime(df.date, unit=time_unit, errors="coerce")
         df.set_index("date", inplace=True)
     if start_time:
         if isinstance(start_time, datetime) or type(start_time) is int:
             time_unit = detect_time_unit(start_time)
-            start_time = pd.to_datetime(start_time, unit=time_unit)
-            start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                start_time = pd.to_datetime(start_time, unit=time_unit)
+                start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError):
+                # Fallback to pd.to_datetime without unit if detection fails
+                start_time = pd.to_datetime(start_time)
+                start_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
 
     if stop_time:
         if isinstance(stop_time, datetime) or type(stop_time) is int:
             time_unit = detect_time_unit(stop_time)
-            stop_time = pd.to_datetime(stop_time, unit=time_unit)
-            stop_time = stop_time.strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                stop_time = pd.to_datetime(stop_time, unit=time_unit)
+                stop_time = stop_time.strftime("%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError):
+                # Fallback to pd.to_datetime without unit if detection fails
+                stop_time = pd.to_datetime(stop_time)
+                stop_time = stop_time.strftime("%Y-%m-%d %H:%M:%S")
 
-    df = df.resample(freq).first()
+    df = df.resample(freq).agg(OHLC_AGGREGATION).ffill()
 
     if start_time and stop_time:
         df = df[start_time:stop_time]  # noqa
@@ -175,19 +209,7 @@ def apply_transformers_to_dataframe(
 
         # Create a temporary dataframe with the desired frequency
         if freq:
-            tmp_df = (
-                df.resample(freq)
-                .agg(
-                    {
-                        "open": "first",
-                        "high": "max",
-                        "low": "min",
-                        "close": "last",
-                        "volume": "sum",
-                    }
-                )
-                .ffill()
-            )
+            tmp_df = df.resample(freq).agg(OHLC_AGGREGATION).ffill()
         else:
             tmp_df = df
 
@@ -242,7 +264,7 @@ def process_res_df(df, ind, trans_res):
     return df
 
 
-def detect_time_unit(str_or_int: str or int):
+def detect_time_unit(str_or_int: Union[str, int]):
     """Determines a if a timestamp is really a timestamp and if it
     matches is in seconds or milliseconds
     Parameters
@@ -290,7 +312,7 @@ def standardize_df(df: pd.DataFrame):
 
     columns_to_drop = ["ignore", "date"]
 
-    new_df.drop(columns=columns_to_drop, errors="ignore")
+    new_df = new_df.drop(columns=columns_to_drop, errors="ignore")
 
     new_df.open = pd.to_numeric(new_df.open)
     new_df.close = pd.to_numeric(new_df.close)
@@ -319,13 +341,25 @@ def infer_frequency(df: pd.DataFrame) -> str:
         raise ValueError("DataFrame index must be a DatetimeIndex")
 
     if df.index.freq is not None:
-        return df.index.freq
+        return df.index.freqstr
 
     # Calculate time differences between consecutive index values
     time_diffs = df.index.to_series().diff()
 
     # Get the most common time difference
-    most_common_diff = time_diffs.mode()[0]
+    if len(time_diffs.dropna()) == 0:
+        # No valid time differences, return a default frequency
+        return "1Min"
+
+    mode_result = time_diffs.mode()
+    if len(mode_result) == 0:
+        # Mode is empty, return a default frequency
+        return "1Min"
+
+    most_common_diff = mode_result[0]
+    if pd.isna(most_common_diff):
+        # Mode contains NaN, return a default frequency
+        return "1Min"
     seconds = most_common_diff.total_seconds()
 
     # Convert seconds to appropriate frequency string

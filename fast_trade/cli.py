@@ -33,8 +33,8 @@ download_parser.add_argument(
     "exchange",
     help="Which exchange to download data from. Defaults to binance.com",
     type=str,
-    default="binanceus",
-    choices=["binancecom", "binanceus", "coinbase"],
+    default="binance",
+    choices=["binance", "coinbase"],
 )
 download_parser.add_argument(
     "--start",
@@ -93,7 +93,7 @@ get_assets_parser.add_argument(
     help="",
     type=str,
     default="local",
-    choices=["local", "binanceus", "binancecom", "coinbase"],
+    choices=["local", "binance", "coinbase"],
 )
 
 update_archive_parser = sub_parsers.add_parser(
@@ -188,8 +188,14 @@ def main():
         command = "-h"
     else:
         command = sys.argv[1]
-    # try:
-    command_map[command](**vars(args))
+
+    command_func = command_map.get(command)
+    if command_func is None:
+        print(f"Error: Unknown command '{command}'")
+        parser.print_help()
+        sys.exit(1)
+
+    command_func(**vars(args))
     print("Done running command: ", command)
 
     # except Exception as e:

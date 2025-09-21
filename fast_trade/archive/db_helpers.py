@@ -50,9 +50,13 @@ def update_klines_to_db(df, symbol, exchange) -> str:
         os.makedirs(exchange_path)
     # create the symbol path if it doesn't exist
     symbol_path = f"{exchange_path}/{symbol}.sqlite"
-    engine = connect_to_db(symbol_path, create=True)
-    df = standardize_df(df)
-    df.to_sql("klines", con=engine, if_exists="append", index=True, index_label="date")
+
+    # Use context manager to ensure connection is always closed
+    with connect_to_db(symbol_path, create=True) as engine:
+        df = standardize_df(df)
+        df.to_sql(
+            "klines", con=engine, if_exists="append", index=True, index_label="date"
+        )
 
     return symbol_path
 
@@ -91,7 +95,7 @@ def standardize_df(df):
         "low",
         "volume",
     ]
-    new_df = new_df[allowed_columns]
+    new_df = new_df.reindex(columns=allowed_columns)
     new_df = new_df.sort_index()
 
     new_df.open = pd.to_numeric(new_df.open)
@@ -130,34 +134,40 @@ def get_kline(
         if isinstance(end_date, str):
             end_date = datetime.datetime.fromisoformat(end_date)
 
-    conn = connect_to_db(db_path)
-    query = "SELECT * FROM klines"
-    if start_date:
-        query += f" WHERE date >= '{start_date.isoformat()}'"
+    # Use context manager to ensure connection is always closed
+    with connect_to_db(db_path) as conn:
+        query = "SELECT * FROM klines"
 
-    if end_date:
-        query += f" AND date <= '{end_date.isoformat()}'"
+        # Build WHERE clause conditionally
+        conditions = []
+        if start_date is not None:
+            conditions.append(f"date >= '{start_date.isoformat()}'")
+        if end_date is not None:
+            conditions.append(f"date <= '{end_date.isoformat()}'")
 
-    df = pd.read_sql_query(query, conn)
-    df.date = pd.to_datetime(df.date)
-    df = df.set_index("date")
-    # set the freq of the dataframe
-    df = df.resample(freq).agg(
-        {
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum",
-        }
-    )
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        df = pd.read_sql_query(query, conn)
+        df.date = pd.to_datetime(df.date)
+        df = df.set_index("date")
+        # set the freq of the dataframe
+        df = df.resample(freq).agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
 
     return df
 
 
 if __name__ == "__main__":
     symbol = "BTCUSDT"
-    exchange = "binanceus"
+    exchange = "binance"
     start_date = datetime.datetime(2024, 12, 12)
     end_date = datetime.datetime(2024, 12, 31)
     df = get_kline(symbol, exchange, start_date, end_date)

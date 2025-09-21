@@ -161,7 +161,7 @@ def test_calculate_return_perc_simple():
 
     res = calculate_return_perc(mock_tl)
 
-    assert res == 10
+    assert res == 11.111
 
 
 def test_calculate_return_perc_rounding():
@@ -180,7 +180,7 @@ def test_calculate_return_perc_rounding():
 
     res = calculate_return_perc(mock_tl)
 
-    assert res == 9.615
+    assert res == 10.638
 
 
 def test_calculate_return_perc_empty_tl():
@@ -200,7 +200,7 @@ def test_calculate_buy_and_hold_perc():
 
     res = calculate_buy_and_hold_perc(mock_df)
 
-    assert res == 90.0
+    assert res == 900.0
 
 
 def test_calculate_sharpe_ratio():
@@ -228,11 +228,11 @@ def test_build_summary():
     mock_performance_start_time = datetime.datetime.utcnow()
     res, trade_df = build_summary(mock_df, mock_performance_start_time)
 
-    assert res["return_perc"] == 10.0
+    assert res["return_perc"] == 11.111
     assert res["sharpe_ratio"] == 0.469
     assert res["equity_peak"] == 110
     assert res["max_drawdown"] == 90
-    assert res["buy_and_hold_perc"] == 9.091
+    assert res["buy_and_hold_perc"] == 10.0
     assert res["median_trade_len"] == 179.5
     assert res["mean_trade_len"] == 179.5
     assert res["max_trade_held"] == 299.0

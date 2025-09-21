@@ -2,7 +2,6 @@ import random
 
 
 def generate_backtest():
-
     charts = [
         "1m",
         "3m",

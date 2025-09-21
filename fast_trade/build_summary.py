@@ -107,14 +107,16 @@ def calculate_market_exposure(df):
 
 def calculate_effective_trades(df, trade_log_df):
     """Calculate trade metrics accounting for commission"""
-    # Get the fee values for the trade log indices
+    # Get the fee values for the trade log indices and convert to percentage terms
     trade_fees = df.loc[trade_log_df.index, "fee"]
+    trade_account_values = df.loc[trade_log_df.index, "adj_account_value"]
+    trade_fees_perc = (trade_fees / trade_account_values) * 100
 
     profitable_trades = trade_log_df[
-        trade_log_df.adj_account_value_change_perc > trade_fees
+        trade_log_df.adj_account_value_change_perc > trade_fees_perc
     ]
     unprofitable_trades = trade_log_df[
-        trade_log_df.adj_account_value_change_perc <= trade_fees
+        trade_log_df.adj_account_value_change_perc <= trade_fees_perc
     ]
     commission_impact = df.fee.sum() / df.iloc[-1].adj_account_value * 100
 
@@ -214,10 +216,20 @@ def calculate_trade_streaks(trade_log_df):
         win_streak_counts = win_streaks.value_counts()
         loss_streak_counts = loss_streaks.value_counts()
 
+        # Calculate current streak by walking backwards from the end
+        current_streak = 0
+        if not trades.empty:
+            last_outcome = trades.iloc[-1]
+            current_streak = 1  # Start with the last trade
+            # Walk backwards until we find a different outcome
+            for i in range(len(trades) - 2, -1, -1):
+                if trades.iloc[i] == last_outcome:
+                    current_streak += 1
+                else:
+                    break
+
         return {
-            "current_streak": (
-                int(sum(trades == trades.iloc[-1])) if not trades.empty else 0
-            ),
+            "current_streak": current_streak,
             "max_win_streak": int(
                 win_streak_counts.max() if not win_streak_counts.empty else 0
             ),
@@ -533,9 +545,9 @@ def calculate_return_perc(trade_log_df: pd.DataFrame):
         if trade_log_df.iloc[0].adj_account_value:
             first_val = float(trade_log_df.iloc[0].adj_account_value)
             last_val = float(trade_log_df.iloc[-1].adj_account_value)
-            if last_val == 0:
+            if first_val == 0 or last_val == 0:
                 return 0.0
-            return_perc = 100 - (first_val / last_val) * 100
+            return_perc = ((last_val - first_val) / first_val) * 100
             return 0.0 if pd.isna(return_perc) else float(round(return_perc, 3))
     except (ZeroDivisionError, ValueError, AttributeError):
         return 0.0
@@ -547,9 +559,9 @@ def calculate_buy_and_hold_perc(df):
     try:
         first_close = float(df.iloc[0].close)
         last_close = float(df.iloc[-1].close)
-        if last_close == 0:
+        if first_close == 0 or last_close == 0:
             return 0.0
-        buy_and_hold_perc = (1 - (first_close / last_close)) * 100
+        buy_and_hold_perc = ((last_close - first_close) / first_close) * 100
         return 0.0 if pd.isna(buy_and_hold_perc) else float(round(buy_and_hold_perc, 3))
     except (ZeroDivisionError, ValueError, AttributeError):
         return 0.0

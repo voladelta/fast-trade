@@ -1,4 +1,5 @@
 import datetime
+import os
 import typing
 
 import pandas as pd
@@ -7,7 +8,7 @@ from .binance_api import get_binance_klines
 from .coinbase_api import get_product_candles
 from .db_helpers import update_klines_to_db
 
-supported_exchanges = ["binanceus", "binancecom", "coinbase"]
+supported_exchanges = ["binance", "coinbase"]
 
 
 def update_kline(
@@ -15,6 +16,7 @@ def update_kline(
     exchange,
     start_date: typing.Optional[datetime.datetime] = None,
     end_date: typing.Optional[datetime.datetime] = None,
+    incremental_writes: bool = True,
 ):
     if exchange not in supported_exchanges:
         raise ValueError(f"Exchange {exchange} not supported")
@@ -53,39 +55,43 @@ def update_kline(
         # update the db
         print(msg)
 
-    if exchange == "binanceus":
+    # Use store_func only when incremental_writes is True
+    store_func = update_klines_to_db if incremental_writes else lambda x, y, z: None
+
+    if exchange == "binance":
         klines, status_obj = get_binance_klines(
             symbol,
             curr_date,
             end_date,
-            "us",
             status_update,
-            store_func=update_klines_to_db,
-        )
-    elif exchange == "binancecom":
-        klines, status_obj = get_binance_klines(
-            symbol,
-            curr_date,
-            end_date,
-            "com",
-            status_update,
-            store_func=update_klines_to_db,
+            store_func=store_func,
         )
     elif exchange == "coinbase":
         klines, status_obj = get_product_candles(
-            symbol, curr_date, end_date, status_update, store_func=update_klines_to_db
+            symbol, curr_date, end_date, status_update, store_func=store_func
         )
     else:
         raise ValueError(f"Exchange {exchange} not supported")
 
-    db_path = update_klines_to_db(klines, symbol, exchange)
+    # Only write the full DataFrame if incremental writes are disabled
+    # When incremental_writes=True, the store_func already wrote chunks during download
+    if not incremental_writes:
+        db_path = update_klines_to_db(klines, symbol, exchange)
+    else:
+        # When incremental writes are enabled, we need to determine the db_path
+        # since update_klines_to_db wasn't called at the end
+        ARCHIVE_PATH = os.getenv(
+            "ARCHIVE_PATH", os.path.join(os.getcwd(), "ft_archive")
+        )
+        exchange_path = f"{ARCHIVE_PATH}/{exchange}"
+        db_path = f"{exchange_path}/{symbol}.sqlite"
 
     return db_path
 
 
 if __name__ == "__main__":
     # symbol = "BTCUSDT"
-    # exchange = "binanceus"
+    # exchange = "binance"
     symbol = "BTC-USD"
     exchange = "coinbase"
     start_date = datetime.datetime(2024, 1, 1)

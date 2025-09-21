@@ -13,17 +13,18 @@ def update_single_archive(symbol: str, exchange: str):
     if not symbol.endswith(".sqlite"):
         symbol = symbol + ".sqlite"
     path = os.path.join(ARCHIVE_PATH, exchange, symbol)
-    db = connect_to_db(path)
 
     now = datetime.datetime.now(datetime.timezone.utc)
     now = now.replace(second=0, microsecond=0)
 
-    start_date = db.execute("SELECT max(date) FROM klines").fetchone()[0]
+    # Use context manager to ensure connection is always closed
+    with connect_to_db(path) as db:
+        start_date = db.execute("SELECT max(date) FROM klines").fetchone()[0]
 
-    if start_date is None:
-        start_date = now - datetime.timedelta(days=7)
-    else:
-        start_date = datetime.datetime.fromisoformat(start_date)
+        if start_date is None:
+            start_date = now - datetime.timedelta(days=7)
+        else:
+            start_date = datetime.datetime.fromisoformat(start_date)
 
     actual_symbol = symbol.replace(".sqlite", "")
     print(f"Updating {actual_symbol} from {exchange} from {start_date} to {now}")

@@ -141,6 +141,16 @@ def validate_backtest(backtest):
     def process_logic(logic: list, logic_type: str):
         # each logic is a list of strings
         # check each of these individually
+
+        # Validate that logic list has at least 3 elements
+        if len(logic) < 3:
+            return {
+                "has_error": True,
+                "msgs": [
+                    f"{logic_type} logic must have at least 3 elements: [operand1, operator, operand2] (and optionally lookback)"
+                ],
+            }
+
         pos1 = logic[0]
         operator = logic[1]
         pos2 = logic[2]

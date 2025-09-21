@@ -9,7 +9,6 @@ def inputvalidator(input_="ohlc"):
     def dfcheck(func):
         @wraps(func)
         def wrap(*args, **kwargs):
-
             args = list(args)
             i = 0 if isinstance(args[0], pd.DataFrame) else 1
 
@@ -52,7 +51,6 @@ def apply(decorator):
 
 @apply(inputvalidator(input_="ohlc"))
 class TA:
-
     __version__ = "1.3"
 
     @classmethod
@@ -1908,9 +1906,7 @@ class TA:
 
         senkou_span_a = pd.Series(
             ((tenkan_sen + kijun_sen) / 2), name="senkou_span_a"
-        ).shift(
-            kijun_period
-        )  # Leading span
+        ).shift(kijun_period)  # Leading span
 
         senkou_span_b = pd.Series(
             (
@@ -2038,7 +2034,6 @@ class TA:
         _mf = pd.concat([ohlc["close"], ohlc["volume"], mf], axis=1)
 
         def vol_shift(row):
-
             if row["mf"] > factor * row["close"] / 100:
                 return row["volume"]
             elif row["mf"] < -factor * row["close"] / 100:
