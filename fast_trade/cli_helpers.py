@@ -41,6 +41,21 @@ def open_strat_file(fp):
         raise MissingStrategyFile("Could not open strategy file at path: {}".format(fp))
 
 
+def _apply_mods(strat_obj, mods_args):
+    """Return a new strategy dictionary with CLI modifiers applied."""
+
+    if not mods_args:
+        return strat_obj
+
+    mods = {}
+    i = 0
+    while i < len(mods_args):
+        mods[mods_args[i]] = mods_args[i + 1]
+        i += 2
+
+    return {**strat_obj, **mods}
+
+
 def create_plot(df, trade_df, show_plot=True):
     # Filter for numeric columns only
     numeric_df = df.select_dtypes(include=["number"])

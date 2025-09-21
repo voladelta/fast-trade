@@ -12,7 +12,7 @@ from fast_trade.archive.cli import download_asset, get_assets
 from fast_trade.archive.update_archive import update_archive
 from fast_trade.validate_backtest import validate_backtest
 
-from .cli_helpers import create_plot, open_strat_file, save
+from .cli_helpers import _apply_mods, create_plot, open_strat_file, save
 from .run_backtest import run_backtest
 
 parser = argparse.ArgumentParser(
@@ -108,14 +108,7 @@ def backtest_helper(*args, **kwargs):
     if not strat_obj:
         print("Could not open strategy file: {}".format(kwargs.get("strategy")))
         sys.exit(1)
-    if kwargs.get("mods"):
-        mods = {}
-        i = 0
-        while i < len(kwargs.get("mods")):
-            mods[kwargs.get("mods")[i]] = kwargs.get("mods")[i + 1]
-            i += 2
-
-        strat_obj = {**strat_obj, **mods}
+    strat_obj = _apply_mods(strat_obj, kwargs.get("mods"))
 
     result = run_backtest(strat_obj)
     summary = result.get("summary")
@@ -159,14 +152,7 @@ def backtest_helper(*args, **kwargs):
 
 def validate_helper(args):
     strat_obj = open_strat_file(args.get("strategy"))
-    if args.get("mods"):
-        mods = {}
-        i = 0
-        while i < len(args.get("mods")):
-            mods[args.get("mods")[i]] = args.get("mods")[i + 1]
-            i += 2
-
-        strat_obj = {**strat_obj, **mods}
+    strat_obj = _apply_mods(strat_obj, args.get("mods"))
 
     validate_backtest(strat_obj)
 
