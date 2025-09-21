@@ -14,12 +14,18 @@ supported_exchanges = ["binance", "coinbase"]
 def update_kline(
     symbol,
     exchange,
-    start_date: typing.Optional[datetime.datetime] = None,
-    end_date: typing.Optional[datetime.datetime] = None,
+    start_date: typing.Optional[typing.Union[str, datetime.datetime]] = None,
+    end_date: typing.Optional[typing.Union[str, datetime.datetime]] = None,
     incremental_writes: bool = True,
 ):
     if exchange not in supported_exchanges:
         raise ValueError(f"Exchange {exchange} not supported")
+
+    # Convert string inputs to datetime objects
+    if isinstance(start_date, str):
+        start_date = datetime.datetime.fromisoformat(start_date)
+    if isinstance(end_date, str):
+        end_date = datetime.datetime.fromisoformat(end_date)
 
     if start_date is None:
         # 30 days ago
@@ -30,8 +36,11 @@ def update_kline(
         # now
         end_date = datetime.datetime.now(datetime.timezone.utc)
 
-    start_date = start_date.replace(tzinfo=datetime.timezone.utc)
-    end_date = end_date.replace(tzinfo=datetime.timezone.utc)
+    # Ensure both dates have timezone info
+    if start_date.tzinfo is None:
+        start_date = start_date.replace(tzinfo=datetime.timezone.utc)
+    if end_date.tzinfo is None:
+        end_date = end_date.replace(tzinfo=datetime.timezone.utc)
     now = datetime.datetime.now(datetime.timezone.utc)
 
     if end_date > now:

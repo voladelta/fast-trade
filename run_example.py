@@ -32,8 +32,8 @@ strategy = {
     "start_date": datetime.datetime(2024, 10, 1, 0, 0),
     "end_date": datetime.datetime(2025, 2, 26, 0, 0),
     "rules": None,
-    "symbol": "BTC-USDT",
-    "exchange": "coinbase",
+    "symbol": "BTCUSDT",
+    "exchange": "binance",
 }
 
 if __name__ == "__main__":

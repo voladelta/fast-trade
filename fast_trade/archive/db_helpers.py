@@ -110,22 +110,39 @@ def standardize_df(df):
 def get_kline(
     symbol: str,
     exchange: str,
-    start_date: datetime.datetime = None,
-    end_date: datetime.datetime = None,
+    start_date: typing.Union[str, datetime.datetime] = None,
+    end_date: typing.Union[str, datetime.datetime] = None,
     freq: str = "1Min",
 ) -> pd.DataFrame:
     """
     Get the klines from the db
     """
+    # Convert string dates to datetime objects for update_kline call
+    start_dt = None
+    end_dt = None
+
+    if start_date is not None:
+        if isinstance(start_date, str):
+            start_dt = datetime.datetime.fromisoformat(start_date)
+        else:
+            start_dt = start_date
+
+    if end_date is not None:
+        if isinstance(end_date, str):
+            end_dt = datetime.datetime.fromisoformat(end_date)
+        else:
+            end_dt = end_date
+
     db_path = f"{ARCHIVE_PATH}/{exchange}/{symbol}.sqlite"
     # if the db exists, if not try and downlaod it
     if not os.path.exists(db_path):
         import fast_trade.archive.update_kline as update_kline
 
         update_kline.update_kline(
-            symbol=symbol, exchange=exchange, start_date=start_date, end_date=end_date
+            symbol=symbol, exchange=exchange, start_date=start_dt, end_date=end_dt
         )
 
+    # Convert for internal use if they were strings
     if start_date is not None:
         if isinstance(start_date, str):
             start_date = datetime.datetime.fromisoformat(start_date)
