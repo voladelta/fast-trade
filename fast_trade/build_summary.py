@@ -161,6 +161,61 @@ def calculate_drawdown_metrics(df):
         }
 
 
+def calculate_expectancy(trade_log_df):
+    """Calculate expectancy (expected value per trade)"""
+    try:
+        if trade_log_df.empty:
+            return 0.0
+
+        wins = trade_log_df[trade_log_df.adj_account_value_change_perc > 0]
+        losses = trade_log_df[trade_log_df.adj_account_value_change_perc < 0]
+
+        if len(trade_log_df) == 0:
+            return 0.0
+
+        win_rate = len(wins) / len(trade_log_df)
+        loss_rate = len(losses) / len(trade_log_df)
+
+        if len(wins) > 0:
+            avg_win = abs(wins.adj_account_value_change_perc.mean())
+        else:
+            avg_win = 0.0
+
+        if len(losses) > 0:
+            avg_loss = abs(losses.adj_account_value_change_perc.mean())
+        else:
+            avg_loss = 0.0
+
+        expectancy = (win_rate * avg_win) - (loss_rate * avg_loss)
+        return float(round(expectancy, 3))
+    except (ValueError, AttributeError, ZeroDivisionError):
+        return 0.0
+
+
+def calculate_sqn(trade_log_df):
+    """Calculate System Quality Number (SQN)"""
+    try:
+        if trade_log_df.empty:
+            return 0.0
+
+        trade_returns = trade_log_df.adj_account_value_change_perc
+        num_trades = len(trade_log_df)
+
+        if num_trades == 0:
+            return 0.0
+
+        avg_return = trade_returns.mean()
+        std_return = trade_returns.std()
+
+        if pd.isna(avg_return) or pd.isna(std_return) or std_return == 0:
+            return 0.0
+
+        sqn = (avg_return / std_return) * (num_trades ** 0.5)
+        return float(round(sqn, 3))
+    except (ValueError, AttributeError, ZeroDivisionError):
+        return 0.0
+
+
 def calculate_risk_metrics(df):
     """Calculate risk-adjusted return metrics"""
     try:
@@ -297,11 +352,6 @@ def calculate_time_analysis(df):
 
 
 def build_summary(df, performance_start_time):
-    # Not yet implimented
-    # Expectancy [%]                           6.92
-    # SQN                                      1.77
-    # Sortino Ratio                            0.54
-    # Calmar Ratio                             0.07
 
     # Do the easy stuff first
     equity_peak = round(df["account_value"].max(), 3)
@@ -309,7 +359,8 @@ def build_summary(df, performance_start_time):
 
     initial_value = df.iloc[0]["adj_account_value"]
     min_value = df["adj_account_value"].min()
-    max_drawdown = round(((min_value - initial_value) / initial_value) * 100, 3) if initial_value > 0 else 0.0
+    peak_value = df["adj_account_value"].max()
+    max_drawdown = round(((min_value - peak_value) / peak_value) * 100, 3) if peak_value > 0 else 0.0
 
     performance_stop_time = datetime.datetime.utcnow()
     start_date = df.index[0]
@@ -366,6 +417,10 @@ def build_summary(df, performance_start_time):
         risk_metrics = calculate_risk_metrics(df)
         trade_streaks = calculate_trade_streaks(trade_log_df)
         time_analysis = calculate_time_analysis(df)
+
+        # Trading system quality metrics
+        expectancy = calculate_expectancy(trade_log_df)
+        sqn = calculate_sqn(trade_log_df)
 
         performance_stop_time = datetime.datetime.utcnow()
 
@@ -448,6 +503,9 @@ def build_summary(df, performance_start_time):
         "risk_metrics": risk_metrics,
         "trade_streaks": trade_streaks,
         "time_analysis": time_analysis,
+        # Trading system quality metrics
+        "expectancy": expectancy,
+        "sqn": sqn,
     }
 
     return summary, trade_log_df
