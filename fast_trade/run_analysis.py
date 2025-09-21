@@ -38,6 +38,7 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
     comission = float(backtest.get("comission"))
     lot_size = backtest.get("lot_size_perc")
     max_lot_size = backtest.get("max_lot_size")
+    slippage = float(backtest.get("slippage", 0))
 
     new_account_value = account_value
 
@@ -62,13 +63,14 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
                 max_lot_size,
                 close,
                 comission,
+                slippage,
             )
 
         if curr_action in ["x", "ax", "tsl"] and in_trade:
             # this means we should exit the trade
 
             [in_trade, aux, new_account_value, fee] = exit_position(
-                account_value_list, close, aux, comission
+                account_value_list, close, aux, comission, slippage
             )
 
         adj_account_value = new_account_value + convert_aux_to_base(aux, close)
@@ -82,7 +84,7 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
     if backtest.get("exit_on_end") and in_trade:
         # this means we should exit the trade
         [in_trade, aux, new_account_value, fee] = exit_position(
-            account_value_list, close, aux, comission
+            account_value_list, close, aux, comission, slippage
         )
         new_date = df.index[-1] + timedelta(seconds=1)
 
@@ -108,7 +110,7 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
 
 
 def enter_position(
-    account_value_list, lot_size, account_value, max_lot_size, close, comission
+    account_value_list, lot_size, account_value, max_lot_size, close, comission, slippage
 ):
     # Since the first trade could happen right away, we have to give the account
     # some value, since its not yet appended to the account_value_list.
@@ -121,13 +123,16 @@ def enter_position(
     if max_lot_size and base_transaction_amount > max_lot_size:
         base_transaction_amount = max_lot_size
 
-    new_aux = convert_base_to_aux(base_transaction_amount, close)
+    # Apply slippage to get the effective amount of base currency that can be used
+    effective_base_amount = base_transaction_amount * (1 - slippage)
+
+    new_aux = convert_base_to_aux(effective_base_amount, close)
     fee = calculate_fee(new_aux, comission)
 
     new_aux = new_aux - fee
 
     new_account_value = calculate_new_account_value_on_enter(
-        base_transaction_amount, account_value_list, account_value
+        base_transaction_amount, account_value_list, account_value, slippage
     )
 
     in_trade = True
@@ -135,13 +140,17 @@ def enter_position(
     return [in_trade, new_aux, new_account_value, fee]
 
 
-def exit_position(account_value_list, close, new_aux, comission):
+def exit_position(account_value_list, close, new_aux, comission, slippage=0):
     # this means we should EXIT the trade
     new_base = convert_aux_to_base(new_aux, close)
     fee = calculate_fee(new_base, comission)
-    new_base = new_base - fee
 
-    new_account_value = account_value_list[-1] + new_base
+    # Apply slippage to the exit transaction
+    # Slippage affects the amount we receive when selling
+    effective_base = new_base * (1 - slippage)
+    effective_base = effective_base - fee
+
+    new_account_value = account_value_list[-1] + effective_base
 
     new_aux = 0  # since we "converted" the auxilary values back to the base
 
@@ -195,15 +204,17 @@ def calculate_fee(order_size: float, comission: float):
 
 
 def calculate_new_account_value_on_enter(
-    base_transaction_amount, account_value_list, account_value
+    base_transaction_amount, account_value_list, account_value, slippage=0
 ):
-    """calulates the new account value after the transaction"""
+    """calulates the new account value after the transaction, accounting for slippage"""
 
-    # assuming we can spend 100% of our base_transaction_amount
-    # TODO: add slippage calulations
+    # Slippage affects the effective amount we can use for the transaction
+    # For entering a position, slippage means we get less crypto for our money
+    # because we have to pay a higher effective price
+    effective_transaction_amount = base_transaction_amount * (1 - slippage)
 
     if len(account_value_list):
-        new_account_value = account_value_list[-1] - base_transaction_amount
+        new_account_value = account_value_list[-1] - effective_transaction_amount
     else:
-        new_account_value = account_value - base_transaction_amount
+        new_account_value = account_value - effective_transaction_amount
     return round(new_account_value, 8)

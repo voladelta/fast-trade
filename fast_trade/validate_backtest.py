@@ -62,6 +62,7 @@ def validate_backtest(backtest):
         "any_exit": None,
         "trailing_stop_loss": None,
         "exit_on_end": None,
+        "slippage": None,
     }
 
     required_keys = [
@@ -221,6 +222,20 @@ def validate_backtest(backtest):
         backtest_mirror["lot_size"] = {
             "error": True,
             "msgs": ["Lot size be larger than 0."],
+        }
+
+    slippage = backtest.get("slippage", 0)
+
+    if slippage < 0:
+        backtest_mirror["slippage"] = {
+            "error": True,
+            "msgs": ["Slippage must be greater than or equal to 0."],
+        }
+
+    if slippage > 1:
+        backtest_mirror["slippage"] = {
+            "error": True,
+            "msgs": ["Slippage must be less than or equal to 1 (100%)."],
         }
 
     return_value = backtest_mirror
