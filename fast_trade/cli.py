@@ -23,7 +23,6 @@ parser = argparse.ArgumentParser(
 sub_parsers = parser.add_subparsers()
 
 # build the argement parser downloading stuff
-default_archive_path = os.path.join(os.getcwd(), "archive")
 default_end_date = datetime.datetime.now(datetime.timezone.utc)
 default_start_date = default_end_date - datetime.timedelta(days=30)
 
