@@ -55,7 +55,7 @@ backtest = {
     "freq": "5Min", # time period selected on the chard
     "chart_start": "2021-08-30 18:00:00", # when to start the chart
     "chart_stop": "2021-09-06 16:39:00", # when to stop the chart
-    "comission": 0.01, # a comission to pay per transaction 
+    "comission": 0.01, # a comission to pay per transaction
     "datapoints": [ # describes the data to use in the logic
         {
             "args": [ # args are passed to the transformer function
@@ -92,7 +92,7 @@ backtest = {
       ]
     ],
     "rules": [["sharpe_ratio", ">", 0.5]], # use rules to filter out backtests that didnt perform well
-    "trailing_stop_loss": 0.05, # optional trailing stop loss 
+    "trailing_stop_loss": 0.05, # optional trailing stop loss
     "exit_on_end": False, # at then end of the backtest, if true, the trade will exit
 }
 # backtests can also come from urls
@@ -171,13 +171,13 @@ This update all the existing items in the archive, downloading the latest data f
 
 ## Testing
 
-```bash
-python -m pytest
+```sh
+uv run pytest
 ```
 
 ## Coverage
 
-```bash
+```sh
 coverage run -m pytest
 coverage report -m
 ```
@@ -504,7 +504,7 @@ Valid datapoints:
     [
       "rsi", # valid custom datapoint, should be defined in datapoints
       "<", # logic to use to compare
-      70 # integer, float, or string 
+      70 # integer, float, or string
     ]
 ```
 
@@ -554,7 +554,7 @@ Simple SMA example
 See [TRANSFORMER_README.md](TRANSFORMER_README.md) for a list of supported indicators. For the most details, see the actual implementation in [fast_trade/finta.py](fast_trade/finta.py).
 
 Note:
-  
+
 If a transfomer function returns multiple series, fast-trade will name concate the name of the series with the name of the transfomer function and whatever the returned name is It will be lowercased and maybe not what you expect. See the specific transformer for more details in[./fast_trade/finta.py](fast_trade/finta.py).
 
 Example:
