@@ -391,22 +391,22 @@ Backtests include all the instructions needed to run the backtest minus the data
 - enter: list,
   - required
   - default: `None`
-  - description: a list of [Logic](#LogicDetail)'s with instructions to compare the data on each tick. EVERY logic item must return True to ENTER the  trade.
+  - description: a list of [Logic](#LogicDetail)'s with instructions or expressions to compare the data on each tick. EVERY logic item must return True to ENTER the  trade.
 
 - any_enter: list,
   - optional
   - default: `None`
-  - description: a list of [Logic](#LogicDetail)'s with instructions to compare the data on each tick. ANY LOGIC ITEM can return True to ENTER the trade.
+  - description: a list of [Logic](#LogicDetail)'s with instructions or expressions to compare the data on each tick. ANY LOGIC ITEM can return True to ENTER the trade.
 
-- exit: list
+- exit: list,
   - required
   - default: `None`
-  - description: a list of [Logic](#LogicDetail)'s with instructions to compare the data on each tick. EVERY LOGIC ITEM must return True to EXIT the trade.
+  - description: a list of [Logic](#LogicDetail)'s with instructions or expressions to compare the data on each tick. EVERY LOGIC ITEM must return True to EXIT the trade.
 
-- any_exit: list
+- any_exit: list,
   - optional
   - default: `None`
-  - description: a list of [Logic](#LogicDetail)'s with instructions to compare the data on each tick. ANY LOGIC ITEM can return True to EXIT the trade.
+  - description: a list of [Logic](#LogicDetail)'s with instructions or expressions to compare the data on each tick. ANY LOGIC ITEM can return True to EXIT the trade.
 
 - datapoints: list
   - optional
@@ -451,10 +451,10 @@ This is an example of a simple moving average cross backtest.
         },
     ],
     "enter": [
-      ["close", ">", "sma_long"],
-      ["close", ">", "sma_short"]
+      ["close", ">", "sma_long"], # "close > sma_long"
+      ["close", ">", "sma_short"], # "close > sma_short"
     ],
-    "exit": [["close", "<", "sma_short"]],
+    "exit": [["close", "<", "sma_short"]], # "close < sma_short"
     "trailing_stop_loss": 0.05,
     "exit_on_end": False,
 }
