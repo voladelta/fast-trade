@@ -75,13 +75,7 @@ def prepare_df(df: pd.DataFrame, backtest: dict):
 
     datapoints = backtest.get("datapoints", [])
 
-    if backtest.get("chart_period"):
-        # raise a warning if chart_period is not a valid frequency
-        if not infer_frequency(df):
-            raise ValueError(f"Invalid chart period: {backtest.get('chart_period')}")
-        freq = backtest.get("chart_period")
-    else:
-        freq = backtest.get("freq", "1Min")
+    freq = backtest.get("freq", "1Min")
 
     start_time = backtest.get("start")
     stop_time = backtest.get("stop")

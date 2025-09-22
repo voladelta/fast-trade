@@ -308,7 +308,9 @@ def test_exit_position_without_account_value():
     mock_slippage = 0
 
     with pytest.raises(IndexError):
-        exit_position(mock_account_value_list, mock_close, mock_aux, mock_comission, mock_slippage)
+        exit_position(
+            mock_account_value_list, mock_close, mock_aux, mock_comission, mock_slippage
+        )
 
 
 def test_exit_position_as_second_tick():
@@ -353,7 +355,10 @@ def test_calculate_new_account_value_on_enter_basic():
     mock_slippage = 0
 
     new_account_value = calculate_new_account_value_on_enter(
-        mock_base_transaction_amount, mock_account_value_list, mock_account_value, mock_slippage
+        mock_base_transaction_amount,
+        mock_account_value_list,
+        mock_account_value,
+        mock_slippage,
     )
     assert new_account_value == 0
 
@@ -365,7 +370,10 @@ def test_calculate_new_account_value_on_enter_with_account_vaue_list():
     mock_slippage = 0
 
     new_account_value = calculate_new_account_value_on_enter(
-        mock_base_transaction_amount, mock_account_value_list, mock_account_value, mock_slippage
+        mock_base_transaction_amount,
+        mock_account_value_list,
+        mock_account_value,
+        mock_slippage,
     )
 
     assert new_account_value == 400
@@ -378,7 +386,10 @@ def test_calculate_new_account_value_on_enter_with_slippage():
     mock_slippage = 0.02  # 2% slippage
 
     new_account_value = calculate_new_account_value_on_enter(
-        mock_base_transaction_amount, mock_account_value_list, mock_account_value, mock_slippage
+        mock_base_transaction_amount,
+        mock_account_value_list,
+        mock_account_value,
+        mock_slippage,
     )
     assert new_account_value == 0
 

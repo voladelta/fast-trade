@@ -6,7 +6,10 @@ class TestParseLogicExpression(unittest.TestCase):
     def test_basic_cases(self):
         """Test basic parsing functionality"""
         self.assertEqual(parse_logic_expr("rsi < 30"), ["rsi", "<", 30])
-        self.assertEqual(parse_logic_expr("bbands_bbands_bb_lower > close"), ["bbands_bbands_bb_lower", ">", "close"])
+        self.assertEqual(
+            parse_logic_expr("bbands_bbands_bb_lower > close"),
+            ["bbands_bbands_bb_lower", ">", "close"],
+        )
 
     def test_operators(self):
         """Test all supported operators"""
@@ -23,8 +26,12 @@ class TestParseLogicExpression(unittest.TestCase):
 
     def test_field_names_with_dots(self):
         """Test field names containing dots"""
-        self.assertEqual(parse_logic_expr("bbands.upper > close"), ["bbands.upper", ">", "close"])
-        self.assertEqual(parse_logic_expr("bbands.lower < close"), ["bbands.lower", "<", "close"])
+        self.assertEqual(
+            parse_logic_expr("bbands.upper > close"), ["bbands.upper", ">", "close"]
+        )
+        self.assertEqual(
+            parse_logic_expr("bbands.lower < close"), ["bbands.lower", "<", "close"]
+        )
 
     def test_whitespace_handling(self):
         """Test that extra whitespace is handled correctly"""
@@ -51,7 +58,9 @@ class TestParseLogicExpression(unittest.TestCase):
         self.assertEqual(parse_logic_expr("rsi_2 < 30"), ["rsi_2", "<", 30])
 
         # These should work (field names can contain dots, letters, numbers, underscores)
-        self.assertEqual(parse_logic_expr("field.name_123 > value"), ["field.name_123", ">", "value"])
+        self.assertEqual(
+            parse_logic_expr("field.name_123 > value"), ["field.name_123", ">", "value"]
+        )
 
 
 if __name__ == "__main__":

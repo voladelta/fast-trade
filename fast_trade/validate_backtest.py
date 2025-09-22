@@ -244,6 +244,8 @@ def validate_backtest(backtest):
         [backtest_mirror[key] for key in backtest_mirror.keys()]
     )
     return return_value
+
+
 def validate_backtest_with_df(backtest: dict, df: pd.DataFrame) -> None:
     errors = validate_backtest(backtest)
     if errors.get("has_error"):

@@ -47,7 +47,11 @@ def test_create_trade_log_simple():
     assert len(trade_log_df.index) > 0
     assert list(trade_log_df.trade_id) == list(range(len(trade_log_df)))
 
-    value_col = "adj_account_value" if "adj_account_value" in mock_tl.columns else "account_value"
+    value_col = (
+        "adj_account_value"
+        if "adj_account_value" in mock_tl.columns
+        else "account_value"
+    )
     expected_returns = []
     for exit_time, row in trade_log_df.iterrows():
         entry_time = row["entry_time"]
@@ -265,18 +269,12 @@ def test_build_summary():
     ).dropna()
     if not expected_trade_durations.empty:
         duration_seconds = expected_trade_durations.dt.total_seconds()
-        assert res["mean_trade_len"] == pytest.approx(
-            round(duration_seconds.mean(), 3)
-        )
+        assert res["mean_trade_len"] == pytest.approx(round(duration_seconds.mean(), 3))
         assert res["median_trade_len"] == pytest.approx(
             round(duration_seconds.median(), 3)
         )
-        assert res["max_trade_held"] == pytest.approx(
-            round(duration_seconds.max(), 3)
-        )
-        assert res["min_trade_len"] == pytest.approx(
-            round(duration_seconds.min(), 3)
-        )
+        assert res["max_trade_held"] == pytest.approx(round(duration_seconds.max(), 3))
+        assert res["min_trade_len"] == pytest.approx(round(duration_seconds.min(), 3))
 
     winning_trades = trade_df[trade_df.adj_account_value_change_perc > 0]
     losing_trades = trade_df[trade_df.adj_account_value_change_perc < 0]
@@ -314,8 +312,12 @@ def test_build_summary():
     assert res["num_trades"] == expected_total_trades
 
     if expected_total_trades:
-        expected_win_perc = round((len(winning_trades) / expected_total_trades) * 100, 3)
-        expected_loss_perc = round((len(losing_trades) / expected_total_trades) * 100, 3)
+        expected_win_perc = round(
+            (len(winning_trades) / expected_total_trades) * 100, 3
+        )
+        expected_loss_perc = round(
+            (len(losing_trades) / expected_total_trades) * 100, 3
+        )
     else:
         expected_win_perc = 0.0
         expected_loss_perc = 0.0

@@ -1,6 +1,4 @@
 from fast_trade import run_backtest
-from fast_trade.utils import parse_logic_expr
-from datetime import datetime
 import pprint
 
 strategy = {
@@ -36,9 +34,5 @@ strategy = {
 }
 
 if __name__ == "__main__":
-    strategy["enter"] = [parse_logic_expr(x) for x in strategy["enter"]]
-    strategy["exit"] = [parse_logic_expr(x) for x in strategy["exit"]]
-    strategy["start_date"] = datetime.strptime(strategy["start_date"], "%Y-%m-%d")
-    strategy["end_date"] = datetime.strptime(strategy["end_date"], "%Y-%m-%d")
     res = run_backtest(strategy)
     pprint.pprint(res.get("summary"))

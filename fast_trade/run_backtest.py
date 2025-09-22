@@ -12,6 +12,7 @@ from .evaluate import evaluate_rules
 from .run_analysis import apply_logic_to_df
 from .utils import coerce_numeric_value, extract_error_messages
 from .validate_backtest import validate_backtest, validate_backtest_with_df
+from fast_trade.utils import parse_logic_expr
 
 
 class MissingData(Exception):
@@ -70,9 +71,7 @@ def run_backtest(backtest: dict, df: pd.DataFrame = pd.DataFrame(), summary=True
         max_periods = max(args) if args else 0
         # print(max_periods)
         # get the frequency of the backtest
-        freq = new_backtest.get("freq") or new_backtest.get("chart_period")
-        if not freq:
-            freq = "1Min"  # Default frequency if none specified
+        freq = new_backtest.get("freq", "1Min")
         # convert the frequency to a timedelta
         td_freq = pd.Timedelta(freq)
 
@@ -151,15 +150,29 @@ def prepare_new_backtest(backtest):
     new_backtest["max_lot_size"] = int(backtest.get("max_lot_size", 0))
     new_backtest["rules"] = backtest.get("rules", [])
 
-    # if chart_start and chart_stop are provided, use them
-    if backtest.get("chart_start"):
-        new_backtest["start"] = backtest.get("chart_start")
-        del new_backtest["chart_start"]
-        print("Warning: chart_start is deprecated, use start instead.")
-    if backtest.get("chart_stop"):
-        new_backtest["stop"] = backtest.get("chart_stop")
-        del new_backtest["chart_stop"]
-        print("Warning: chart_stop is deprecated, use stop instead.")
+    if "enter" in backtest:
+        new_backtest["enter"] = [
+            parse_logic_expr(x) if isinstance(x, str) else x
+            for x in backtest.get("enter")
+        ]
+
+    if "exit" in backtest:
+        new_backtest["exit"] = [
+            parse_logic_expr(x) if isinstance(x, str) else x
+            for x in backtest.get("exit")
+        ]
+
+    if "any_enter" in backtest:
+        new_backtest["any_enter"] = [
+            parse_logic_expr(x) if isinstance(x, str) else x
+            for x in backtest.get("any_enter")
+        ]
+
+    if "any_exit" in backtest:
+        new_backtest["any_exit"] = [
+            parse_logic_expr(x) if isinstance(x, str) else x
+            for x in backtest.get("any_exit")
+        ]
 
     return new_backtest
 

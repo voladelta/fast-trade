@@ -110,7 +110,13 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
 
 
 def enter_position(
-    account_value_list, lot_size, account_value, max_lot_size, close, comission, slippage
+    account_value_list,
+    lot_size,
+    account_value,
+    max_lot_size,
+    close,
+    comission,
+    slippage,
 ):
     # Since the first trade could happen right away, we have to give the account
     # some value, since its not yet appended to the account_value_list.

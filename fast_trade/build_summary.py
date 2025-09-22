@@ -211,7 +211,7 @@ def calculate_sqn(trade_log_df):
         if pd.isna(avg_return) or pd.isna(std_return) or std_return == 0:
             return 0.0
 
-        sqn = (avg_return / std_return) * (num_trades ** 0.5)
+        sqn = (avg_return / std_return) * (num_trades**0.5)
         return float(round(sqn, 3))
     except (ValueError, AttributeError, ZeroDivisionError):
         return 0.0
@@ -353,7 +353,6 @@ def calculate_time_analysis(df):
 
 
 def build_summary(df, performance_start_time):
-
     # Do the easy stuff first
     equity_peak = round(df["account_value"].max(), 3)
     equity_final = round(df.iloc[-1]["adj_account_value"], 3)
@@ -361,7 +360,11 @@ def build_summary(df, performance_start_time):
     initial_value = df.iloc[0]["adj_account_value"]
     min_value = df["adj_account_value"].min()
     peak_value = df["adj_account_value"].max()
-    max_drawdown = round(((min_value - peak_value) / peak_value) * 100, 3) if peak_value > 0 else 0.0
+    max_drawdown = (
+        round(((min_value - peak_value) / peak_value) * 100, 3)
+        if peak_value > 0
+        else 0.0
+    )
 
     performance_stop_time = datetime.datetime.now(UTC)
     start_date = df.index[0]
@@ -540,9 +543,7 @@ def create_trade_log(df):
         # Fallback: some datasets only persist the adjusted account value change.
         # When that happens we treat it as the absolute account value so downstream
         # percentage calculations still work instead of raising errors.
-        inferred_values = pd.to_numeric(
-            df["adj_account_value_change"], errors="coerce"
-        )
+        inferred_values = pd.to_numeric(df["adj_account_value_change"], errors="coerce")
         df["account_value"] = inferred_values
         value_series = inferred_values
 

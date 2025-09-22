@@ -167,10 +167,6 @@ def main():
     command_func(**vars(args))
     print("Done running command: ", command)
 
-    # except Exception as e:
-    #     print(f"Error running command {command}: {e}")
-    #     sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

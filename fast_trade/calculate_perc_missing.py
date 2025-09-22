@@ -23,7 +23,11 @@ def calculate_perc_missing(df):
     if not isinstance(df.index, pd.DatetimeIndex):
         raise ValueError("DataFrame index is not a DatetimeIndex")
 
-    freq = df.index.freqstr if df.index.freq is not None else infer_frequency_from_index(df.index)
+    freq = (
+        df.index.freqstr
+        if df.index.freq is not None
+        else infer_frequency_from_index(df.index)
+    )
     # Get the full range of expected dates
     start = df.index.min()
     end = df.index.max()
