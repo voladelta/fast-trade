@@ -4,6 +4,7 @@ import os
 import random
 import time
 from typing import List, Optional
+from datetime import UTC
 
 import pandas as pd
 import requests
@@ -92,7 +93,7 @@ def get_available_symbols() -> List[str]:
 
 
 def get_oldest_date_available(symbol):
-    endTime = int(datetime.datetime.utcnow().timestamp() * 1000)
+    endTime = int(datetime.datetime.now(UTC).timestamp() * 1000)
     url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m&startTime=0&endTime={endTime}&limit=1"
 
     data = requests.get(url).json()
@@ -101,7 +102,7 @@ def get_oldest_date_available(symbol):
         return oldest_date
     except Exception:
         print(f"error with {symbol}")
-        return datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        return datetime.datetime.now(UTC) - datetime.timedelta(days=1)
 
 
 def get_binance_klines(

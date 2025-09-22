@@ -46,3 +46,8 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 "fast_trade.archive" = ["*.py"] 
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]

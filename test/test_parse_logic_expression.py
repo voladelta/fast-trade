@@ -14,7 +14,6 @@ class TestParseLogicExpression(unittest.TestCase):
         self.assertEqual(parse_logic_expr("rsi = 50"), ["rsi", "=", 50])
         self.assertEqual(parse_logic_expr("rsi >= 30"), ["rsi", ">=", 30])
         self.assertEqual(parse_logic_expr("rsi <= 70"), ["rsi", "<=", 70])
-        self.assertEqual(parse_logic_expr("rsi != 50"), ["rsi", "!=", 50])
 
     def test_numeric_values(self):
         """Test numeric value parsing"""

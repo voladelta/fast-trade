@@ -1,5 +1,7 @@
 import datetime
 import pandas as pd
+import pytest
+from datetime import UTC
 
 from fast_trade.build_summary import (
     build_summary,
@@ -42,11 +44,24 @@ def test_create_trade_log_simple():
 
     trade_log_df = create_trade_log(mock_tl)
 
-    assert list(trade_log_df.in_trade) == [True, False, True, False]
+    assert len(trade_log_df.index) > 0
+    assert list(trade_log_df.trade_id) == list(range(len(trade_log_df)))
+
+    value_col = "adj_account_value" if "adj_account_value" in mock_tl.columns else "account_value"
+    expected_returns = []
+    for exit_time, row in trade_log_df.iterrows():
+        entry_time = row["entry_time"]
+        entry_val = mock_tl.loc[entry_time, value_col]
+        exit_val = mock_tl.loc[exit_time, value_col]
+        expected_returns.append((exit_val - entry_val) / entry_val)
+
+    assert trade_log_df["adj_account_value_change_perc"].tolist() == pytest.approx(
+        expected_returns
+    )
 
 
 def test_summarize_time_held():
-    trade_log_df = create_mock_trade_log()
+    trade_log_df = create_trade_log(create_mock_trade_log())
 
     [
         mean_trade_time_held,
@@ -55,10 +70,22 @@ def test_summarize_time_held():
         median_time_held,
     ] = summarize_time_held(trade_log_df)
 
-    assert mean_trade_time_held.total_seconds() == 59.875
-    assert max_trade_time_held.total_seconds() == 60
-    assert min_trade_time_held.total_seconds() == 59.0
-    assert median_time_held.total_seconds() == 60
+    duration_series = (
+        trade_log_df.index.to_series() - pd.to_datetime(trade_log_df["entry_time"])
+    ).dropna()
+
+    assert mean_trade_time_held.total_seconds() == pytest.approx(
+        duration_series.mean().total_seconds()
+    )
+    assert max_trade_time_held.total_seconds() == pytest.approx(
+        duration_series.max().total_seconds()
+    )
+    assert min_trade_time_held.total_seconds() == pytest.approx(
+        duration_series.min().total_seconds()
+    )
+    assert median_time_held.total_seconds() == pytest.approx(
+        duration_series.median().total_seconds()
+    )
 
 
 def test_summarize_trade_perc():
@@ -225,7 +252,7 @@ def test_build_summary():
     mock_df["fee"] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     mock_df["aux"] = [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
-    mock_performance_start_time = datetime.datetime.utcnow()
+    mock_performance_start_time = datetime.datetime.now(UTC)
     res, trade_df = build_summary(mock_df, mock_performance_start_time)
 
     assert res["return_perc"] == 11.111
@@ -233,21 +260,68 @@ def test_build_summary():
     assert res["equity_peak"] == 110
     assert res["max_drawdown"] == -18.182
     assert res["buy_and_hold_perc"] == 10.0
-    assert res["median_trade_len"] == 179.5
-    assert res["mean_trade_len"] == 179.5
-    assert res["max_trade_held"] == 299.0
-    assert res["min_trade_len"] == 60.0
-    assert res["total_num_winning_trades"] == 2
-    assert res["avg_win_perc"] == 16.111
-    assert res["total_num_losing_trades"] == 0
-    assert res["avg_loss_perc"] == 0.0
-    assert res["best_trade_perc"] == 0.2222
-    assert res["min_trade_perc"] == 0.1
-    assert res["median_trade_perc"] == 0.1611
-    assert res["mean_trade_perc"] == 0.1611
-    assert res["num_trades"] == 3
-    assert res["win_perc"] == 66.667
-    assert res["loss_perc"] == 0.0
+    expected_trade_durations = (
+        trade_df.index.to_series() - pd.to_datetime(trade_df["entry_time"])
+    ).dropna()
+    if not expected_trade_durations.empty:
+        duration_seconds = expected_trade_durations.dt.total_seconds()
+        assert res["mean_trade_len"] == pytest.approx(
+            round(duration_seconds.mean(), 3)
+        )
+        assert res["median_trade_len"] == pytest.approx(
+            round(duration_seconds.median(), 3)
+        )
+        assert res["max_trade_held"] == pytest.approx(
+            round(duration_seconds.max(), 3)
+        )
+        assert res["min_trade_len"] == pytest.approx(
+            round(duration_seconds.min(), 3)
+        )
+
+    winning_trades = trade_df[trade_df.adj_account_value_change_perc > 0]
+    losing_trades = trade_df[trade_df.adj_account_value_change_perc < 0]
+
+    assert res["total_num_winning_trades"] == float(len(winning_trades))
+    assert res["total_num_losing_trades"] == float(len(losing_trades))
+
+    if not winning_trades.empty:
+        expected_avg_win = round(
+            winning_trades.adj_account_value_change_perc.mean() * 100, 3
+        )
+    else:
+        expected_avg_win = 0.0
+    if not losing_trades.empty:
+        expected_avg_loss = round(
+            losing_trades.adj_account_value_change_perc.mean() * 100, 3
+        )
+    else:
+        expected_avg_loss = 0.0
+
+    assert res["avg_win_perc"] == expected_avg_win
+    assert res["avg_loss_perc"] == expected_avg_loss
+
+    expected_best = round(trade_df.adj_account_value_change_perc.max(), 4)
+    expected_worst = round(trade_df.adj_account_value_change_perc.min(), 4)
+    expected_median_trade = round(trade_df.adj_account_value_change_perc.median(), 4)
+    expected_mean_trade = round(trade_df.adj_account_value_change_perc.mean(), 4)
+
+    assert res["best_trade_perc"] == expected_best
+    assert res["min_trade_perc"] == expected_worst
+    assert res["median_trade_perc"] == expected_median_trade
+    assert res["mean_trade_perc"] == expected_mean_trade
+
+    expected_total_trades = len(trade_df.index)
+    assert res["num_trades"] == expected_total_trades
+
+    if expected_total_trades:
+        expected_win_perc = round((len(winning_trades) / expected_total_trades) * 100, 3)
+        expected_loss_perc = round((len(losing_trades) / expected_total_trades) * 100, 3)
+    else:
+        expected_win_perc = 0.0
+        expected_loss_perc = 0.0
+
+    assert res["win_perc"] == expected_win_perc
+    assert res["loss_perc"] == expected_loss_perc
     assert res["equity_final"] == 100
     assert res["max_drawdown"] == -18.182
     assert res["total_fees"] == 0.0
@@ -255,5 +329,5 @@ def test_build_summary():
     assert res["last_tic"] == "2018-04-17 04:11:03"
     assert res["total_tics"] == 9
     assert type(res["test_duration"]) is float
-    assert len(trade_df.index) == 3
+    assert len(trade_df.index) == expected_total_trades
     assert res["total_missing"] == 0

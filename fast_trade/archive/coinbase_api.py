@@ -6,6 +6,7 @@ import time
 import typing
 from pprint import pprint
 from typing import List, Optional
+from datetime import UTC
 
 import pandas as pd
 import requests
@@ -81,7 +82,7 @@ def get_product_candles(
         start = get_oldest_day(product_id)
 
     # can't be more than 1 hour in the past
-    end = end or datetime.datetime.utcnow()
+    end = end or datetime.datetime.now(UTC)
     start = start or (end - datetime.timedelta(hours=3))
 
     # end = end + datetime.timedelta(days=1)
@@ -108,7 +109,7 @@ def get_product_candles(
         # print("currentDate", currentDate, "end", end)
         currentDate = currentDate.replace(tzinfo=datetime.timezone.utc)
         next_end = currentDate + datetime.timedelta(hours=3)
-        now = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+        now = datetime.datetime.now(UTC).replace(tzinfo=datetime.timezone.utc)
         next_end = next_end.replace(tzinfo=datetime.timezone.utc)
         if next_end > now:
             next_end = now

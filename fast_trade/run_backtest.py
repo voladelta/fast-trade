@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import re
+from datetime import UTC
 
 import pandas as pd
 
@@ -76,7 +77,7 @@ def run_backtest(backtest: dict, df: pd.DataFrame = pd.DataFrame(), summary=True
             trade_log, dataframe of all the rows where transactions happened
     """
 
-    performance_start_time = datetime.datetime.utcnow()
+    performance_start_time = datetime.datetime.now(UTC)
     new_backtest = prepare_new_backtest(backtest)
     errors = validate_backtest(new_backtest)
 
@@ -140,7 +141,7 @@ def run_backtest(backtest: dict, df: pd.DataFrame = pd.DataFrame(), summary=True
     if summary:
         summary, trade_log = build_summary(df, performance_start_time)
     else:
-        performance_stop_time = datetime.datetime.utcnow()
+        performance_stop_time = datetime.datetime.now(UTC)
         summary = {
             "test_duration": (
                 performance_stop_time - performance_start_time

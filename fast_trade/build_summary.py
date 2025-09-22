@@ -1,5 +1,6 @@
 import datetime
 import warnings
+from datetime import UTC
 
 import numpy as np
 import pandas as pd
@@ -362,7 +363,7 @@ def build_summary(df, performance_start_time):
     peak_value = df["adj_account_value"].max()
     max_drawdown = round(((min_value - peak_value) / peak_value) * 100, 3) if peak_value > 0 else 0.0
 
-    performance_stop_time = datetime.datetime.utcnow()
+    performance_stop_time = datetime.datetime.now(UTC)
     start_date = df.index[0]
     end_date = df.index[-1]
     # count the number enter, exit, and hold signals
@@ -422,7 +423,7 @@ def build_summary(df, performance_start_time):
         expectancy = calculate_expectancy(trade_log_df)
         sqn = calculate_sqn(trade_log_df)
 
-        performance_stop_time = datetime.datetime.utcnow()
+        performance_stop_time = datetime.datetime.now(UTC)
 
         [perc_missing, total_missing_dates] = calculate_perc_missing(df)
 
@@ -512,35 +513,106 @@ def build_summary(df, performance_start_time):
 
 
 def create_trade_log(df):
-    """Finds all the rows when a trade was entered or exited
+    """Construct per-trade rows with aggregated performance metrics"""
 
-    Parameters
-    ----------
-        df: dataframe, from process_dataframe
-
-    Returns
-    -------
-        trade_log_df: dataframe, of when transactions took place
-    """
     trade_log_df = df.reset_index()
     trade_log_df = trade_log_df.groupby(
         (trade_log_df["in_trade"] != trade_log_df["in_trade"].shift()).cumsum()
     ).first()
 
-    if "date" in trade_log_df.columns:
+    index_name = df.index.name if df.index.name else None
+    if index_name and index_name in trade_log_df.columns:
+        trade_log_df = trade_log_df.set_index(index_name)
+    elif "date" in trade_log_df.columns:
         trade_log_df = trade_log_df.set_index("date")
 
     trade_log_df = trade_log_df.replace([np.inf, -np.inf], np.nan)
 
-    # only get the records where the account value changed
-    # this will exclude the "enter" trades since the adj_account_value doesn't change
-    trade_log_df = trade_log_df[trade_log_df.adj_account_value_change != 0]
+    if trade_log_df.empty:
+        return pd.DataFrame()
 
-    return trade_log_df
+    value_column = "adj_account_value" if "adj_account_value" in df.columns else None
+    if value_column is None and "account_value" in df.columns:
+        value_column = "account_value"
+
+    records = []
+    exit_times = []
+    entry_time = None
+    entry_value = np.nan
+    trade_id = 0
+
+    for timestamp, row in trade_log_df.iterrows():
+        in_trade_flag = bool(row.get("in_trade"))
+        if in_trade_flag:
+            entry_time = timestamp
+            if value_column:
+                entry_value_series = df[value_column]
+                entry_value = entry_value_series.get(timestamp, np.nan)
+                if not pd.isna(entry_value):
+                    entry_value = float(entry_value)
+        elif entry_time is not None:
+            exit_time = timestamp
+            exit_value = np.nan
+            if value_column:
+                exit_value_series = df[value_column]
+                exit_value = exit_value_series.get(exit_time, np.nan)
+                if not pd.isna(exit_value):
+                    exit_value = float(exit_value)
+
+            change = 0.0
+            change_perc = 0.0
+            if not pd.isna(entry_value) and not pd.isna(exit_value):
+                change = exit_value - entry_value
+                change_perc = change / entry_value if entry_value != 0 else 0.0
+
+            record = row.to_dict()
+            record["entry_time"] = entry_time
+            record["entry_adj_account_value"] = (
+                float(entry_value) if not pd.isna(entry_value) else 0.0
+            )
+            record["exit_adj_account_value"] = (
+                float(exit_value) if not pd.isna(exit_value) else 0.0
+            )
+            record["adj_account_value_change"] = change
+            record["adj_account_value_change_perc"] = change_perc
+            record["trade_id"] = trade_id
+
+            records.append(record)
+            exit_times.append(exit_time)
+            trade_id += 1
+            entry_time = None
+            entry_value = np.nan
+
+    if not records:
+        return pd.DataFrame()
+
+    trade_records_df = pd.DataFrame(records)
+    trade_records_df["exit_time"] = exit_times
+    trade_records_df = trade_records_df.replace([np.inf, -np.inf], np.nan)
+    trade_records_df = trade_records_df.set_index("exit_time")
+
+    if index_name:
+        trade_records_df.index.name = index_name
+
+    return trade_records_df
 
 
 def summarize_time_held(trade_log_df):
-    trade_time_held_series = trade_log_df.index.to_series().diff()
+    if trade_log_df.empty:
+        zero_delta = datetime.timedelta(0)
+        return (zero_delta, zero_delta, zero_delta, zero_delta)
+
+    if "entry_time" in trade_log_df.columns:
+        entry_series = pd.to_datetime(trade_log_df["entry_time"])
+        exit_series = trade_log_df.index.to_series()
+        trade_time_held_series = (exit_series - entry_series).dropna()
+    else:
+        trade_time_held_series = trade_log_df.index.to_series().diff().dropna()
+
+    if trade_time_held_series.empty:
+        zero_delta = datetime.timedelta(0)
+        return (zero_delta, zero_delta, zero_delta, zero_delta)
+
     mean_trade_time_held = trade_time_held_series.mean()
     max_trade_time_held = trade_time_held_series.max()
     min_trade_time_held = trade_time_held_series.min()
