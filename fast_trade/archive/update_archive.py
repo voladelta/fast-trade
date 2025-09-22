@@ -56,7 +56,3 @@ def update_archive():
 
     updated_time = round(time.time() - start_time, 2)
     print(f"\n\nUpdated {count} symbols in {updated_time} seconds ✅")
-
-
-if __name__ == "__main__":
-    update_archive()

@@ -61,7 +61,3 @@ class TestParseLogicExpression(unittest.TestCase):
         self.assertEqual(
             parse_logic_expr("field.name_123 > value"), ["field.name_123", ">", "value"]
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

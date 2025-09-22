@@ -96,14 +96,3 @@ def update_kline(
         db_path = f"{exchange_path}/{symbol}.sqlite"
 
     return db_path
-
-
-if __name__ == "__main__":
-    # symbol = "BTCUSDT"
-    # exchange = "binance"
-    symbol = "BTC-USD"
-    exchange = "coinbase"
-    start_date = datetime.datetime(2024, 1, 1)
-    end_date = datetime.datetime(2024, 1, 14)
-    res = update_kline(symbol, exchange, start_date, end_date)
-    print(res)

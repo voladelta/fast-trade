@@ -232,15 +232,3 @@ def get_oldest_day(
 
     print(f"API calls: {call_count}")
     return end_date
-
-
-if __name__ == "__main__":
-    start = datetime.datetime(2024, 2, 7)
-    res = get_product_candles("BTC-USD", start=start)
-    # res = find_oldest_date("DOGE-USD")
-    # res = get_products()
-    pprint(res)
-
-    # res.to_csv("btc.csv")
-    # print(res)
-    # print(res[0], res[1])

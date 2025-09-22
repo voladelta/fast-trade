@@ -86,21 +86,3 @@ def evaluate_rules(result: dict, rules: list) -> tuple:
         return False, False, []
 
     return all(res), any(res), res
-
-
-if __name__ == "__main__":
-    rules = [["trade_streaks.avg_win_streak", ">", 6]]
-    result = {"trade_streaks": {"avg_win_streak": 5}}
-    print(evaluate_rules(result, rules))
-
-    # Example usage
-    error_example = {
-        "enter": {
-            "error": True,
-            "msgs": [
-                'Datapoint "macd_macd" referenced in enter logic not found in datapoints.',
-                'Datapoint "macd_signal" referenced in enter logic not found in datapoints.',
-            ],
-        }
-    }
-    print(extract_error_messages(error_example))

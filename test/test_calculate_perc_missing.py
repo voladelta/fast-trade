@@ -112,13 +112,3 @@ def test_calculate_perc_missing_infer_5min_freq():
     print(
         f"✓ test_calculate_perc_missing_infer_5min_freq passed: {perc_missinng}% missing, {total_missing} total missing"
     )
-
-
-if __name__ == "__main__":
-    test_calculate_perc_missing_none_missing()
-    test_calculate_perc_missing_some_missing()
-    test_calculate_perc_missing_empty_df()
-    test_calculate_perc_missing_no_index()
-    test_calculate_perc_missing_with_different_freq()
-    test_calculate_perc_missing_infer_5min_freq()
-    print("All tests passed! 🎉")

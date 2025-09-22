@@ -2375,7 +2375,3 @@ class TA:
             raise ValueError(f"Column {column} not found in DataFrame")
 
         return ohlc[column].rolling(window=periods).min()
-
-
-if __name__ == "__main__":
-    print([k for k in TA.__dict__.keys() if k[0] not in "_"])

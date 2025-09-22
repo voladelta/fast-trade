@@ -180,12 +180,3 @@ def get_kline(
         )
 
     return df
-
-
-if __name__ == "__main__":
-    symbol = "BTCUSDT"
-    exchange = "binance"
-    start_date = datetime.datetime(2024, 12, 12)
-    end_date = datetime.datetime(2024, 12, 31)
-    df = get_kline(symbol, exchange, start_date, end_date)
-    print(df)
