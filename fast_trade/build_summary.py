@@ -531,9 +531,20 @@ def create_trade_log(df):
     if trade_log_df.empty:
         return pd.DataFrame()
 
-    value_column = "adj_account_value" if "adj_account_value" in df.columns else None
-    if value_column is None and "account_value" in df.columns:
-        value_column = "account_value"
+    value_series = None
+    if "adj_account_value" in df.columns:
+        value_series = pd.to_numeric(df["adj_account_value"], errors="coerce")
+    elif "account_value" in df.columns:
+        value_series = pd.to_numeric(df["account_value"], errors="coerce")
+    elif "adj_account_value_change" in df.columns:
+        # Fallback: some datasets only persist the adjusted account value change.
+        # When that happens we treat it as the absolute account value so downstream
+        # percentage calculations still work instead of raising errors.
+        inferred_values = pd.to_numeric(
+            df["adj_account_value_change"], errors="coerce"
+        )
+        df["account_value"] = inferred_values
+        value_series = inferred_values
 
     records = []
     exit_times = []
@@ -545,17 +556,15 @@ def create_trade_log(df):
         in_trade_flag = bool(row.get("in_trade"))
         if in_trade_flag:
             entry_time = timestamp
-            if value_column:
-                entry_value_series = df[value_column]
-                entry_value = entry_value_series.get(timestamp, np.nan)
+            if value_series is not None:
+                entry_value = value_series.get(timestamp, np.nan)
                 if not pd.isna(entry_value):
                     entry_value = float(entry_value)
         elif entry_time is not None:
             exit_time = timestamp
             exit_value = np.nan
-            if value_column:
-                exit_value_series = df[value_column]
-                exit_value = exit_value_series.get(exit_time, np.nan)
+            if value_series is not None:
+                exit_value = value_series.get(exit_time, np.nan)
                 if not pd.isna(exit_value):
                     exit_value = float(exit_value)
 

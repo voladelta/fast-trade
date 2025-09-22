@@ -208,13 +208,15 @@ def calculate_new_account_value_on_enter(
 ):
     """calulates the new account value after the transaction, accounting for slippage"""
 
-    # Slippage affects the effective amount we can use for the transaction
-    # For entering a position, slippage means we get less crypto for our money
-    # because we have to pay a higher effective price
-    effective_transaction_amount = base_transaction_amount * (1 - slippage)
+    # Slippage reduces how much of the target asset we receive, but the account still
+    # spends the full transaction amount. To keep the cash ledger accurate we deduct
+    # the original base amount from the account value instead of the slippage-adjusted
+    # amount. This mirrors the expectation that slippage manifests as a worse fill
+    # price rather than a discount on capital deployed.
+    amount_to_deduct = base_transaction_amount
 
     if len(account_value_list):
-        new_account_value = account_value_list[-1] - effective_transaction_amount
+        new_account_value = account_value_list[-1] - amount_to_deduct
     else:
-        new_account_value = account_value - effective_transaction_amount
+        new_account_value = account_value - amount_to_deduct
     return round(new_account_value, 8)
