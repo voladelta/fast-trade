@@ -1,6 +1,5 @@
 import datetime
 import itertools
-import re
 from datetime import UTC
 
 import pandas as pd
@@ -11,43 +10,8 @@ from .build_data_frame import prepare_df
 from .build_summary import build_summary
 from .evaluate import evaluate_rules
 from .run_analysis import apply_logic_to_df
+from .utils import coerce_numeric_value, extract_error_messages
 from .validate_backtest import validate_backtest, validate_backtest_with_df
-
-
-def extract_error_messages(error_dict: dict) -> str:
-    """
-    Extract and format error messages from the error dictionary.
-
-    Parameters
-    ----------
-    error_dict: dict, the dictionary containing error information
-
-    Returns
-    -------
-    str, formatted error messages
-    """
-    messages = []
-
-    def traverse_errors(d):
-        if isinstance(d, dict):
-            for key, value in d.items():
-                if key == "msgs" and isinstance(value, list):
-                    for msg in value:
-                        if isinstance(msg, str):
-                            messages.append(msg)
-                        elif isinstance(msg, dict):
-                            traverse_errors(msg)
-                        else:
-                            messages.append(str(msg))
-                else:
-                    traverse_errors(value)
-        elif isinstance(d, list):
-            for item in d:
-                traverse_errors(item)
-
-    traverse_errors(error_dict)
-
-    return "\n".join(messages)
 
 
 class MissingData(Exception):
@@ -406,37 +370,17 @@ def process_single_logic(logic, row):
 
 
 def clean_field_type(field, row=None):
-    """Determines the value of what to run the logic against.
-        This might be a calculated value from the current row,
-        or a supplied value, such as a number.
+    """Return comparable value for logic evaluation, resolving row lookups."""
 
-    Parameters
-    ----------
-        field - str, int, or float, logic field to check
-        row - dict, dictionary of values of the current frame
+    if row and not isinstance(row, dict):
+        row = row._asdict()
 
-    Returns
-    -------
-        str or int
+    coerced = coerce_numeric_value(field)
 
-    """
-    if row:
-        if not isinstance(row, dict):
-            row = row._asdict()
-
-    if isinstance(field, str):
-        if field.isnumeric():
-            return int(field)
-        if re.match(r"^-?\d+(?:\.\d+)$", field):  # if its a string in a float
-            return float(field)
-
-    if type(field) is bool:
-        return field
-
-    if isinstance(field, int) or isinstance(field, float):
-        return field
+    if isinstance(coerced, (int, float, bool)):
+        return coerced
 
     if row:
-        return row[field]
+        return row[coerced]
 
     return row

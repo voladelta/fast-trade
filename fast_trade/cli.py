@@ -121,31 +121,15 @@ def backtest_helper(*args, **kwargs):
 
         plt.show()
 
-    # modify the summary to make it more readable
-    try:
-        summary["mean_trade_len"] = (
-            summary.get("mean_trade_len") / 60
-        )  # convert to minutes
-    except BaseException:
-        summary["mean_trade_len"] = 0
-    try:
-        summary["max_trade_held"] = (
-            summary.get("max_trade_held") / 60
-        )  # convert to minutes
-    except BaseException:
-        summary["max_trade_held"] = 0
-    try:
-        summary["min_trade_len"] = (
-            summary.get("min_trade_len") / 60
-        )  # convert to minutes
-    except BaseException:
-        summary["min_trade_len"] = 0
-    try:
-        summary["median_trade_len"] = (
-            summary.get("median_trade_len") / 60
-        )  # convert to minutes
-    except BaseException:
-        summary["median_trade_len"] = 0
+    # convert trade duration metrics from seconds to minutes when possible
+    for key in (
+        "mean_trade_len",
+        "max_trade_held",
+        "min_trade_len",
+        "median_trade_len",
+    ):
+        value = summary.get(key)
+        summary[key] = value / 60 if isinstance(value, (int, float)) else 0
 
     pprint(summary)
 

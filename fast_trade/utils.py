@@ -1,5 +1,7 @@
-import pandas as pd
 import re
+from typing import Any, Dict
+
+import pandas as pd
 
 
 def to_dataframe(ticks: list) -> pd.DataFrame:
@@ -12,12 +14,19 @@ def to_dataframe(ticks: list) -> pd.DataFrame:
     return df
 
 
+OHLC_AGGREGATION = {
+    "open": "first",
+    "high": "max",
+    "low": "min",
+    "close": "last",
+    "volume": "sum",
+}
+
+
 def resample(df: pd.DataFrame, interval: str) -> pd.DataFrame:
     """Resample DataFrame by <interval>."""
 
-    d = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
-
-    return df.resample(interval).agg(d)
+    return df.resample(interval).agg(OHLC_AGGREGATION)
 
 
 def resample_calendar(df: pd.DataFrame, offset: str) -> pd.DataFrame:
@@ -28,9 +37,7 @@ def resample_calendar(df: pd.DataFrame, offset: str) -> pd.DataFrame:
     :return: result DataFrame
     """
 
-    d = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
-
-    return df.resample(offset).agg(d)
+    return df.resample(offset).agg(OHLC_AGGREGATION)
 
 
 def trending_up(df: pd.Series, period: int) -> pd.Series:
@@ -53,60 +60,54 @@ def trending_down(df: pd.Series, period: int) -> pd.Series:
     return pd.Series(df.diff(period) < 0, name="trending_down {}".format(period))
 
 
-def infer_frequency(df: pd.DataFrame) -> str:
-    """Infers the frequency of a DataFrame by analyzing time differences between consecutive index values.
+def infer_frequency_from_index(index: pd.DatetimeIndex) -> str:
+    """Infer the dominant frequency from a DatetimeIndex."""
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with a datetime index
+    if not isinstance(index, pd.DatetimeIndex):
+        raise ValueError("Index must be a DatetimeIndex")
 
-    Returns
-    -------
-    str
-        The inferred frequency as a string (e.g., '1Min', '5Min', '1H', '1D', etc.).
-        Falls back to ``"1Min"`` if the frequency cannot be determined.
-    """
-    if not isinstance(df.index, pd.DatetimeIndex):
-        raise ValueError("DataFrame index must be a DatetimeIndex")
-
-    if df.index.freq is not None:
-        return df.index.freqstr
+    if index.freq is not None:
+        return index.freqstr
 
     default_frequency = "1Min"
 
-    # Calculate time differences between consecutive index values
-    time_diffs = df.index.to_series().diff()
+    time_diffs = index.to_series().diff()
 
-    if len(time_diffs.dropna()) == 0:
+    non_null_diffs = time_diffs.dropna()
+    if non_null_diffs.empty:
         return default_frequency
 
-    # Get the most common time difference
-    mode_result = time_diffs.mode()
-    if len(mode_result) == 0:
+    mode_result = non_null_diffs.mode()
+    if mode_result.empty:
         return default_frequency
 
-    most_common_diff = mode_result[0]
+    most_common_diff = mode_result.iloc[0]
     if pd.isna(most_common_diff):
         return default_frequency
 
     seconds = most_common_diff.total_seconds()
-
     if seconds <= 0:
         return default_frequency
 
-    # Convert seconds to appropriate frequency string
     if seconds < 60:
         return f"{int(seconds)}S"
-    elif seconds < 3600:
+    if seconds < 3600:
         minutes = int(seconds / 60)
         return f"{minutes}Min"
-    elif seconds < 86400:
+    if seconds < 86400:
         hours = int(seconds / 3600)
         return f"{hours}H"
-    else:
-        days = int(seconds / 86400)
-        return f"{days}D"
+    days = int(seconds / 86400)
+    return f"{days}D"
+
+
+def infer_frequency(df: pd.DataFrame) -> str:
+    """Infer frequency helper that accepts a full DataFrame."""
+
+    return infer_frequency_from_index(df.index)
+
+
+NUMERIC_PATTERN = re.compile(r"^-?\d+(?:\.\d+)?$")
 
 
 def parse_logic_expr(expression: str) -> list:
@@ -166,3 +167,46 @@ def parse_logic_expr(expression: str) -> list:
             pass
 
     return [field_name, operator, value]
+
+
+def coerce_numeric_value(value: Any) -> Any:
+    """Return numeric representation for strings when possible."""
+
+    if isinstance(value, (int, float)):
+        return value
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        if value.isnumeric():
+            return int(value)
+        if NUMERIC_PATTERN.match(value):
+            return float(value)
+
+    return value
+
+
+def extract_error_messages(error_dict: Dict[str, Any]) -> str:
+    """Collect nested error messages from validation structures."""
+
+    messages: list[str] = []
+
+    def traverse_errors(node: Any) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "msgs" and isinstance(value, list):
+                    for msg in value:
+                        if isinstance(msg, str):
+                            messages.append(msg)
+                        else:
+                            traverse_errors(msg)
+                else:
+                    traverse_errors(value)
+        elif isinstance(node, list):
+            for item in node:
+                traverse_errors(item)
+
+    traverse_errors(error_dict)
+
+    return "\n".join(messages)

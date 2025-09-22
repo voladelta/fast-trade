@@ -3,6 +3,7 @@ import re
 import pandas as pd
 
 from .transformers_map import transformers_map
+from .utils import coerce_numeric_value
 
 TRANSFORMER_GENERATED_KEYS = [
     "_macd",
@@ -83,7 +84,7 @@ def validate_backtest(backtest):
 
     base_balance = backtest.get("base_balance")
     if base_balance:
-        bb = match_field_type_to_value(base_balance)
+        bb = coerce_numeric_value(base_balance)
 
         if isinstance(bb, str):
             backtest_mirror["base_balance"] = {
@@ -243,17 +244,6 @@ def validate_backtest(backtest):
         [backtest_mirror[key] for key in backtest_mirror.keys()]
     )
     return return_value
-
-
-def match_field_type_to_value(field):
-    if isinstance(field, str):
-        if field.isnumeric():
-            return int(field)
-        if re.match(r"^-?\d+(?:\.\d+)$", field):  # if its a string in a float
-            return float(field)
-    return field
-
-
 def validate_backtest_with_df(backtest: dict, df: pd.DataFrame) -> None:
     errors = validate_backtest(backtest)
     if errors.get("has_error"):

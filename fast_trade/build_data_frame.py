@@ -5,18 +5,8 @@ from typing import Union
 
 import pandas as pd
 
-from fast_trade.utils import infer_frequency
-
 from .transformers_map import transformers_map
-
-# OHLC aggregation dictionary for proper resampling
-OHLC_AGGREGATION = {
-    "open": "first",
-    "high": "max",
-    "low": "min",
-    "close": "last",
-    "volume": "sum",
-}
+from .utils import OHLC_AGGREGATION, infer_frequency
 
 
 class TransformerError(Exception):

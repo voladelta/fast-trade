@@ -1,3 +1,6 @@
+from .utils import extract_error_messages
+
+
 def handle_rule(result: dict, rule: list) -> bool:
     """
     Handle a single rule with support for dotted notation in nested dictionaries.
@@ -83,40 +86,6 @@ def evaluate_rules(result: dict, rules: list) -> tuple:
         return False, False, []
 
     return all(res), any(res), res
-
-
-def extract_error_messages(error_dict: dict) -> str:
-    """
-    Extract and format error messages from the error dictionary.
-
-    Parameters
-    ----------
-    error_dict: dict, the dictionary containing error information
-
-    Returns
-    -------
-    str, formatted error messages
-    """
-    messages = []
-
-    def traverse_errors(d):
-        if isinstance(d, dict):
-            for key, value in d.items():
-                if key == "msgs" and isinstance(value, list):
-                    for msg in value:
-                        if isinstance(msg, str):
-                            messages.append(msg)
-                        else:
-                            messages.append(str(msg))
-                else:
-                    traverse_errors(value)
-        elif isinstance(d, list):
-            for item in d:
-                traverse_errors(item)
-
-    traverse_errors(error_dict)
-
-    return "\n".join(messages)
 
 
 if __name__ == "__main__":

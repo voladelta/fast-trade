@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 import re
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -152,23 +153,22 @@ def save(result):
     Save the dataframe, backtest, and plot into the specified path
     """
 
-    save_path = ARCHIVE_PATH
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
-    if not os.path.exists(f"{save_path}/backtests"):
-        os.mkdir(f"{save_path}/backtests")
+    save_root = Path(ARCHIVE_PATH)
+    backtests_dir = save_root / "backtests"
+    backtests_dir.mkdir(parents=True, exist_ok=True)
+
     # dir exists, now make a new dir with the files
     new_dir = (
         f"{datetime.datetime.strftime(datetime.datetime.now(), '%Y_%m_%d_%H_%M_%S')}"
     )
 
-    new_save_dir = f"{save_path}/backtests/{new_dir}"
-
-    os.mkdir(new_save_dir)
+    new_save_dir = backtests_dir / new_dir
+    new_save_dir.mkdir()
 
     # save the backtest args
     # summary file
-    with open(f"{new_save_dir}/summary.json", "w") as summary_file:
+    summary_path = new_save_dir / "summary.json"
+    with summary_path.open("w") as summary_file:
         summary_file.write(json.dumps(result["summary"], indent=2))
 
     # dataframe
@@ -176,12 +176,14 @@ def save(result):
     # result["trade_df"].to_csv(f"{new_save_dir}/trade_dataframe.csv")
 
     # Use context managers to ensure connections are always closed
-    with connect_to_db(f"{new_save_dir}/dataframe.db", create=True) as df_con:
+    dataframe_path = new_save_dir / "dataframe.db"
+    with connect_to_db(str(dataframe_path), create=True) as df_con:
         result["df"].to_sql(
             "dataframe", con=df_con, if_exists="replace", index=True, index_label="date"
         )
 
-    with connect_to_db(f"{new_save_dir}/trade_log.db", create=True) as trade_con:
+    trade_log_path = new_save_dir / "trade_log.db"
+    with connect_to_db(str(trade_log_path), create=True) as trade_con:
         result["trade_df"].to_sql(
             "trade_log",
             con=trade_con,
@@ -193,4 +195,4 @@ def save(result):
     # plot
     fig = create_plot(result["df"], result["trade_df"], show_plot=False)
 
-    plt.savefig(f"{new_save_dir}/plot.png")
+    plt.savefig(new_save_dir / "plot.png")

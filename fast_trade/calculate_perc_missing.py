@@ -1,40 +1,6 @@
 import pandas as pd
 
-
-def _infer_freq_from_index(index):
-    """
-    Infer the most likely time frequency from a DatetimeIndex by finding the smallest gap.
-
-    Parameters:
-    - index (pd.DatetimeIndex): The DatetimeIndex to analyze
-
-    Returns:
-    - str: The inferred frequency string (e.g., '1Min', '5Min', '1H', etc.)
-    """
-    if len(index) < 2:
-        return "1Min"  # Default for single data point
-
-    # Calculate time deltas between consecutive points
-    deltas = index[1:] - index[:-1]
-
-    # Use the minimum delta (smallest gap) to infer frequency
-    # This works better than mode for sparse data with missing points
-    min_delta = deltas.min()
-
-    # Convert timedelta to frequency string
-    total_seconds = min_delta.total_seconds()
-
-    if total_seconds >= 86400:  # Day or more
-        days = total_seconds // 86400
-        return f"{int(days)}D"
-    elif total_seconds >= 3600:  # Hour or more
-        hours = total_seconds // 3600
-        return f"{int(hours)}H"
-    elif total_seconds >= 60:  # Minute or more
-        minutes = total_seconds // 60
-        return f"{int(minutes)}Min"
-    else:  # Less than a minute
-        return "1Min"  # Default to 1 minute
+from .utils import infer_frequency_from_index
 
 
 def calculate_perc_missing(df):
@@ -56,12 +22,8 @@ def calculate_perc_missing(df):
     # check if the index is a DatetimeIndex
     if not isinstance(df.index, pd.DatetimeIndex):
         raise ValueError("DataFrame index is not a DatetimeIndex")
-    freq = df.index.freq
-    if freq is None:
-        freq = _infer_freq_from_index(df.index)
-    else:
-        # Convert DateOffset to string if needed
-        freq = df.index.freqstr
+
+    freq = df.index.freqstr if df.index.freq is not None else infer_frequency_from_index(df.index)
     # Get the full range of expected dates
     start = df.index.min()
     end = df.index.max()
