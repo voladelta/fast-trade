@@ -124,6 +124,7 @@ def run_backtest(backtest: dict, df: pd.DataFrame = pd.DataFrame(), summary=True
             backtest.get("end_date"),
             freq=freq,
         )
+        print(df)
 
     if df.empty:
         raise MissingData(
@@ -181,8 +182,6 @@ def prepare_new_backtest(backtest):
     new_backtest["comission"] = backtest.get("comission", 0)
     new_backtest["trailing_stop_loss"] = backtest.get("trailing_stop_loss", 0)
     new_backtest["slippage"] = backtest.get("slippage", 0)
-    # new_backtest["any_enter"] = backtest.get("any_enter", [])
-    # new_backtest["any_exit"] = backtest.get("any_exit", [])
     new_backtest["lot_size_perc"] = float(backtest.get("lot_size", 1))
     new_backtest["max_lot_size"] = int(backtest.get("max_lot_size", 0))
     new_backtest["rules"] = backtest.get("rules", [])

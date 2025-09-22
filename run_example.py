@@ -1,19 +1,19 @@
 from fast_trade import run_backtest
 from fast_trade.utils import parse_logic_expr
+from datetime import datetime
 import pprint
-import datetime
 
 strategy = {
-    "freq": "5Min",
+    "freq": "1h",
     "any_enter": [],
     "any_exit": [],
     "enter": [
-        parse_logic_expr("rsi < 30"),
-        parse_logic_expr("bbands_bbands_bb_lower > close"),
+        "rsi < 30",
+        "bbands_bbands_bb_lower > close",
     ],
     "exit": [
-        parse_logic_expr("rsi > 70"),
-        parse_logic_expr("bbands_bbands_bb_upper < close"),
+        "rsi > 70",
+        "bbands_bbands_bb_upper < close",
     ],
     "datapoints": [
         {"name": "ema", "transformer": "ema", "args": [5]},
@@ -28,13 +28,17 @@ strategy = {
     "trailing_stop_loss": 0.0,
     "lot_size_perc": 1.0,
     "max_lot_size": 0.0,
-    "start_date": datetime.datetime(2024, 10, 1, 0, 0),
-    "end_date": datetime.datetime(2025, 2, 26, 0, 0),
+    "start_date": "2025-06-01",
+    "end_date": "2025-09-20",
     "rules": None,
     "symbol": "BTCUSDT",
     "exchange": "binance",
 }
 
 if __name__ == "__main__":
+    strategy["enter"] = [parse_logic_expr(x) for x in strategy["enter"]]
+    strategy["exit"] = [parse_logic_expr(x) for x in strategy["exit"]]
+    strategy["start_date"] = datetime.strptime(strategy["start_date"], "%Y-%m-%d")
+    strategy["end_date"] = datetime.strptime(strategy["end_date"], "%Y-%m-%d")
     res = run_backtest(strategy)
     pprint.pprint(res.get("summary"))
