@@ -53,8 +53,8 @@ def validate_backtest(backtest):
     backtest_mirror = {
         "base_balance": None,
         "freq": None,
-        "chart_start": None,
-        "chart_stop": None,
+        "start_date": None,
+        "end_date": None,
         "comission": None,
         "datapoints": None,
         "enter": None,

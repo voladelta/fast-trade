@@ -53,8 +53,8 @@ from fast_trade import run_backtest, validate_backtest
 backtest = {
     "base_balance": 1000, # start with a balance of 1000
     "freq": "5Min", # time period selected on the chard
-    "chart_start": "2021-08-30 18:00:00", # when to start the chart
-    "chart_stop": "2021-09-06 16:39:00", # when to stop the chart
+    "start_date": "2021-08-30 18:00:00", # when to start the chart
+    "end_date": "2021-09-06 16:39:00", # when to stop the chart
     "comission": 0.01, # a comission to pay per transaction
     "datapoints": [ # describes the data to use in the logic
         {
@@ -431,8 +431,8 @@ This is an example of a simple moving average cross backtest.
 {
     "base_balance": 1000,
     "freq": "5T",
-    "chart_start": "2020-08-30 18:00:00",
-    "chart_stop": "2020-09-06 16:39:00",
+    "start_date": "2020-08-30 18:00:00",
+    "end_date": "2020-09-06 16:39:00",
     "comission": 0.01,
     "datapoints": [
         {
