@@ -72,36 +72,36 @@ def test_convert_aux_to_base_2():
 
 def test_calculate_fee():
     mock_price = 100
-    mock_comission = 0.01
+    mock_commission = 0.01
 
-    fee = calculate_fee(mock_price, mock_comission)
+    fee = calculate_fee(mock_price, mock_commission)
 
     assert fee == 0.01
 
 
 def test_calculate_fee_again():
     mock_price = 200
-    mock_comission = 0.1
+    mock_commission = 0.1
 
-    fee = calculate_fee(mock_price, mock_comission)
+    fee = calculate_fee(mock_price, mock_commission)
 
     assert fee == 0.2
 
 
 def test_calculate_fee_larger():
     mock_order_size = 1000
-    mock_comission = 0.1
+    mock_commission = 0.1
 
-    fee = calculate_fee(mock_order_size, mock_comission)
+    fee = calculate_fee(mock_order_size, mock_commission)
 
     assert fee == 1
 
 
-def test_calculate_fee_no_comission():
+def test_calculate_fee_no_commission():
     mock_price = 100
-    mock_comission = 0.00
+    mock_commission = 0.00
 
-    fee = calculate_fee(mock_price, mock_comission)
+    fee = calculate_fee(mock_price, mock_commission)
 
     assert fee == 0.0
 
@@ -112,7 +112,7 @@ def test_enter_position_1():
     mock_account_value = 1000
     mock_max_lot_size = 0
     mock_close = 10
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -121,7 +121,7 @@ def test_enter_position_1():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -137,7 +137,7 @@ def test_enter_position_2():
     mock_lot_size = 1
     mock_max_lot_size = 0
     mock_close = 10
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -146,7 +146,7 @@ def test_enter_position_2():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -162,7 +162,7 @@ def test_enter_position_3():
     mock_lot_size = 1
     mock_max_lot_size = 0
     mock_close = 10
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -171,7 +171,7 @@ def test_enter_position_3():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -187,7 +187,7 @@ def test_enter_position_lot_size():
     mock_lot_size = 0.5
     mock_max_lot_size = 0
     mock_close = 10
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -196,7 +196,7 @@ def test_enter_position_lot_size():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -206,13 +206,13 @@ def test_enter_position_lot_size():
     assert new_account_value == 550.0
 
 
-def test_enter_position_comission():
+def test_enter_position_commission():
     mock_account_value_list = []
     mock_lot_size = 1
     mock_account_value = 1000
     mock_max_lot_size = 0
     mock_close = 10
-    mock_comission = 0.01
+    mock_commission = 0.01
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -221,7 +221,7 @@ def test_enter_position_comission():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -232,13 +232,13 @@ def test_enter_position_comission():
     assert new_account_value == 0
 
 
-def test_enter_position_comission_and_lot_size():
+def test_enter_position_commission_and_lot_size():
     mock_account_value_list = []
     mock_lot_size = 0.5
     mock_account_value = 1000
     mock_max_lot_size = 0
     mock_close = 10
-    mock_comission = 0.01
+    mock_commission = 0.01
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -247,7 +247,7 @@ def test_enter_position_comission_and_lot_size():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -263,7 +263,7 @@ def test_enter_position_max_lot_size():
     mock_account_value = 1000
     mock_max_lot_size = 100
     mock_close = 10
-    mock_comission = 0.01
+    mock_commission = 0.01
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -272,7 +272,7 @@ def test_enter_position_max_lot_size():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -286,11 +286,11 @@ def test_exit_position_basic():
     mock_account_value_list = [1000, 0]
     mock_aux = 100
     mock_close = 11
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = exit_position(
-        mock_account_value_list, mock_close, mock_aux, mock_comission, mock_slippage
+        mock_account_value_list, mock_close, mock_aux, mock_commission, mock_slippage
     )
 
     assert in_trade is False
@@ -304,12 +304,12 @@ def test_exit_position_without_account_value():
     mock_account_value_list = []
     mock_aux = 100
     mock_close = 11
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0
 
     with pytest.raises(IndexError):
         exit_position(
-            mock_account_value_list, mock_close, mock_aux, mock_comission, mock_slippage
+            mock_account_value_list, mock_close, mock_aux, mock_commission, mock_slippage
         )
 
 
@@ -317,11 +317,11 @@ def test_exit_position_as_second_tick():
     mock_account_value_list = [500]
     mock_aux = 100
     mock_close = 11
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0
 
     in_trade, new_aux, new_account_value, fee = exit_position(
-        mock_account_value_list, mock_close, mock_aux, mock_comission, mock_slippage
+        mock_account_value_list, mock_close, mock_aux, mock_commission, mock_slippage
     )
 
     assert in_trade is False
@@ -334,11 +334,11 @@ def test_exit_position_with_slippage():
     mock_account_value_list = [1000, 0]
     mock_aux = 100
     mock_close = 11
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0.02  # 2% slippage
 
     in_trade, new_aux, new_account_value, fee = exit_position(
-        mock_account_value_list, mock_close, mock_aux, mock_comission, mock_slippage
+        mock_account_value_list, mock_close, mock_aux, mock_commission, mock_slippage
     )
 
     assert in_trade is False
@@ -400,7 +400,7 @@ def test_enter_position_with_slippage():
     mock_account_value = 1000
     mock_max_lot_size = 0
     mock_close = 10
-    mock_comission = 0
+    mock_commission = 0
     mock_slippage = 0.02  # 2% slippage
 
     in_trade, new_aux, new_account_value, fee = enter_position(
@@ -409,7 +409,7 @@ def test_enter_position_with_slippage():
         mock_account_value,
         mock_max_lot_size,
         mock_close,
-        mock_comission,
+        mock_commission,
         mock_slippage,
     )
 
@@ -429,7 +429,7 @@ def test_apply_logic_to_df_simple():
     mock_backtest = {
         "base_balance": 1000,
         "exit_on_end": True,
-        "comission": 0.00,
+        "commission": 0.00,
         "lot_size_perc": 1,
     }
     mock_df["action"] = ["e", "h", "x", "x", "x", "e", "x", "h", "h"]
@@ -484,7 +484,7 @@ def test_apply_logic_to_df_lot_size():
     mock_backtest = {
         "base_balance": 1000,
         "exit_on_end": True,
-        "comission": 0.00,
+        "commission": 0.00,
         "lot_size_perc": 0.5,
     }
     mock_df["action"] = ["e", "h", "h", "x", "h", "h", "e", "h", "h"]

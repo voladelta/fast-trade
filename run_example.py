@@ -22,7 +22,7 @@ strategy = {
     ],
     "base_balance": 1000.0,
     "exit_on_end": False,
-    "comission": 0.0,
+    "commission": 0.0,
     "trailing_stop_loss": 0.0,
     "lot_size_perc": 1.0,
     "max_lot_size": 0.0,

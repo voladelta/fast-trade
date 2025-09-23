@@ -35,7 +35,7 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
     """
     in_trade = False
     account_value = float(backtest.get("base_balance"))  #
-    comission = float(backtest.get("comission"))
+    commission = float(backtest.get("commission"))
     lot_size = backtest.get("lot_size_perc")
     max_lot_size = backtest.get("max_lot_size")
     slippage = float(backtest.get("slippage", 0))
@@ -62,7 +62,7 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
                 account_value,
                 max_lot_size,
                 close,
-                comission,
+                commission,
                 slippage,
             )
 
@@ -70,7 +70,7 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
             # this means we should exit the trade
 
             [in_trade, aux, new_account_value, fee] = exit_position(
-                account_value_list, close, aux, comission, slippage
+                account_value_list, close, aux, commission, slippage
             )
 
         adj_account_value = new_account_value + convert_aux_to_base(aux, close)
@@ -84,7 +84,7 @@ def apply_logic_to_df(df: pd.DataFrame, backtest: dict):
     if backtest.get("exit_on_end") and in_trade:
         # this means we should exit the trade
         [in_trade, aux, new_account_value, fee] = exit_position(
-            account_value_list, close, aux, comission, slippage
+            account_value_list, close, aux, commission, slippage
         )
         new_date = df.index[-1] + timedelta(seconds=1)
 
@@ -115,7 +115,7 @@ def enter_position(
     account_value,
     max_lot_size,
     close,
-    comission,
+    commission,
     slippage,
 ):
     # Since the first trade could happen right away, we have to give the account
@@ -133,7 +133,7 @@ def enter_position(
     effective_base_amount = base_transaction_amount * (1 - slippage)
 
     new_aux = convert_base_to_aux(effective_base_amount, close)
-    fee = calculate_fee(new_aux, comission)
+    fee = calculate_fee(new_aux, commission)
 
     new_aux = new_aux - fee
 
@@ -146,10 +146,10 @@ def enter_position(
     return [in_trade, new_aux, new_account_value, fee]
 
 
-def exit_position(account_value_list, close, new_aux, comission, slippage=0):
+def exit_position(account_value_list, close, new_aux, commission, slippage=0):
     # this means we should EXIT the trade
     new_base = convert_aux_to_base(new_aux, close)
-    fee = calculate_fee(new_base, comission)
+    fee = calculate_fee(new_base, commission)
 
     # Apply slippage to the exit transaction
     # Slippage affects the amount we receive when selling
@@ -196,15 +196,15 @@ def convert_aux_to_base(new_aux: float, close: float):
     return 0.0
 
 
-def calculate_fee(order_size: float, comission: float):
+def calculate_fee(order_size: float, commission: float):
     """calculates the trading fees from the exchange
     Parameters
     ----------
         order_size, amount of the coin after the transaction
-        comission, percentage of the transaction
+        commission, percentage of the transaction
     """
-    if comission:
-        return round((order_size / 100) * comission, 8)
+    if commission:
+        return round((order_size / 100) * commission, 8)
 
     return 0.0
 

@@ -55,7 +55,7 @@ backtest = {
     "freq": "5Min", # time period selected on the chard
     "start_date": "2021-08-30 18:00:00", # when to start the chart
     "end_date": "2021-09-06 16:39:00", # when to stop the chart
-    "comission": 0.01, # a comission to pay per transaction
+    "commission": 0.01, # a commission to pay per transaction
     "datapoints": [ # describes the data to use in the logic
         {
             "args": [ # args are passed to the transformer function
@@ -287,7 +287,7 @@ Example output:
     "any_enter": [],
     "any_exit": [],
     "freq": "5Min",
-    "comission": 0.01,
+    "commission": 0.01,
     "symbol": "BTCUSDT",
     "exchange": "binanceus",
     "datapoints": [
@@ -383,7 +383,7 @@ Backtests include all the instructions needed to run the backtest minus the data
   - default: 1000
   - description: The starting balance of trade account. Usually $ or "base" coins for cryptocurrencies.
 
-- comission: float
+- commission: float
   - optional
   - default: 0.0
   - description: The "trading fee" per trade. This is subtracted per trade.
@@ -433,7 +433,7 @@ This is an example of a simple moving average cross backtest.
     "freq": "5T",
     "start_date": "2020-08-30 18:00:00",
     "end_date": "2020-09-06 16:39:00",
-    "comission": 0.01,
+    "commission": 0.01,
     "datapoints": [
         {
             "args": [

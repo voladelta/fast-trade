@@ -55,7 +55,7 @@ def validate_backtest(backtest):
         "freq": None,
         "start_date": None,
         "end_date": None,
-        "comission": None,
+        "commission": None,
         "datapoints": None,
         "enter": None,
         "exit": None,

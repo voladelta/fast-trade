@@ -143,7 +143,7 @@ def prepare_new_backtest(backtest):
 
     new_backtest["base_balance"] = backtest.get("base_balance", 1000)
     new_backtest["exit_on_end"] = backtest.get("exit_on_end", False)
-    new_backtest["comission"] = backtest.get("comission", 0)
+    new_backtest["commission"] = backtest.get("commission", 0)
     new_backtest["trailing_stop_loss"] = backtest.get("trailing_stop_loss", 0)
     new_backtest["slippage"] = backtest.get("slippage", 0)
     new_backtest["lot_size_perc"] = float(backtest.get("lot_size", 1))

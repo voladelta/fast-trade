@@ -3,7 +3,7 @@
   "freq": "1Min",
   "start_date": "2022-01-01 18:00:00",
   "end_date": "2022-02-06 18:00:00",
-  "comission": 0.01,
+  "commission": 0.01,
   "datapoints": [
     {
       "args": [30],

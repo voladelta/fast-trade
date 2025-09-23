@@ -846,13 +846,13 @@ def test_proccess_logic_and_actions_enter_exit_confirmations_multi_2():
 
 
 def test_prepare_new_backtest_simple():
-    mock_backtest = {"base_balance": 126, "exit_on_end": False, "comission": 0.022}
+    mock_backtest = {"base_balance": 126, "exit_on_end": False, "commission": 0.022}
 
     res = prepare_new_backtest(mock_backtest)
 
     assert res["exit_on_end"] is False
     assert res["base_balance"] == 126
-    assert res["comission"] != 0
+    assert res["commission"] != 0
 
 
 def test_apply_backtest_to_df():
@@ -865,7 +865,7 @@ def test_apply_backtest_to_df():
     mock_backtest = {
         "base_balance": 1000,
         "exit_on_end": False,
-        "comission": 0.01,
+        "commission": 0.01,
         "lot_size_perc": 1,
         "enter": [["ind_1", "=", 5, 2]],
         "any_enter": [],
